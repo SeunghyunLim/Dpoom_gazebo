@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>dpoom_gazebo</name>
+  <version>1.2.4</version>
+  <description>
+    3D models of the Dpoom for simulation and visualization
+  </description>
+  <license>Apache 2.0</license>
+  <author email="shl0216@dgist.ac.kr">Lim</author>
+  <maintainer email="shl0216@dgist.ac.kr">Lim</maintainer>
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>urdf</depend>
+  <depend>xacro</depend>
+</package>
