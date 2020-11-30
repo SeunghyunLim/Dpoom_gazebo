@@ -2,7 +2,7 @@
 <robot name="Dpoom" xmlns:xacro="http://ros.org/wiki/xacro">
   <xacro:include filename="$(find dpoom_gazebo)/urdf/common_properties.xacro"/>
   <xacro:include filename="$(find dpoom_gazebo)/urdf/dpoom.gazebo.xacro"/>
-  <!--xacro:include filename="$(find realsense2_description)/urdf/_d435.urdf.xacro" /-->
+  
   <link name="base_footprint"/>
 
   <joint name="base_joint" type="fixed">
