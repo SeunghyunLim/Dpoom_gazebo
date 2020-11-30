@@ -3,7 +3,7 @@
   <name>dpoom_gazebo</name>
   <version>1.2.4</version>
   <description>
-    3D models of the Dpoom for simulation and visualization
+    Simulation of the Dpoom on Gazebo
   </description>
   <license>Apache 2.0</license>
   <author email="shl0216@dgist.ac.kr">Lim</author>
