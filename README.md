@@ -13,6 +13,7 @@ On your catkin_ws,
 ```
 git clone https://github.com/SeunghyunLim/Dpoom_gazebo.git
 ```
+and catkin_make.
 
 ## Run
 ```
