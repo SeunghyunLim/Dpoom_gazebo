@@ -1,8 +1,8 @@
 <?xml version="1.0" ?>
-<robot name="turtlebot3_waffle_pi" xmlns:xacro="http://ros.org/wiki/xacro">
+<robot name="Dpoom" xmlns:xacro="http://ros.org/wiki/xacro">
   <xacro:include filename="$(find dpoom_gazebo)/urdf/common_properties.xacro"/>
   <xacro:include filename="$(find dpoom_gazebo)/urdf/turtlebot3_dpoom.gazebo.xacro"/>
-  <xacro:include filename="$(find realsense2_description)/urdf/_d435.urdf.xacro" />
+  <!--xacro:include filename="$(find realsense2_description)/urdf/_d435.urdf.xacro" /-->
   <link name="base_footprint"/>
 
   <joint name="base_joint" type="fixed">
@@ -47,7 +47,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="1.57 0 0"/>
       <geometry>
-        <mesh filename="package://turtlebot3_description/meshes/wheels/left_tire.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://dpoom_gazebo/meshes/wheels/left_tire.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="dark"/>
     </visual>
@@ -79,7 +79,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="1.57 0 0"/>
       <geometry>
-        <mesh filename="package://turtlebot3_description/meshes/wheels/right_tire.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://dpoom_gazebo/meshes/wheels/right_tire.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="dark"/>
     </visual>
@@ -203,7 +203,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="-1.57 0 -1.57"/>
       <geometry>
-        <mesh filename="package://realsense2_description/meshes/d435.dae" scale="1 1 1"/>
+        <mesh filename="package://dpoom_gazebo/meshes/sensors/d435.dae" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
