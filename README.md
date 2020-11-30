@@ -5,7 +5,7 @@ Gazebo simulation of Dpoom, based on turtlebot3 simulation.
 
 | Dpoom in real world | Dpoom in Gazebo |
 |---|---|
-|<center><img src="https://github.com/SeunghyunLim/Dpoom_gazebo/blob/master/img/dpoom_real.png" alt="drawing" width="360"/></center>|<center><img src="https://github.com/SeunghyunLim/Dpoom_gazebo/blob/master/img/dpoom_gazebo.png" alt="drawing" width="480"/></center>|
+|<center><img src="https://github.com/SeunghyunLim/Dpoom_gazebo/blob/master/img/dpoom_real.png" alt="drawing" width="285"/></center>|<center><img src="https://github.com/SeunghyunLim/Dpoom_gazebo/blob/master/img/dpoom_gazebo.png" alt="drawing" width="385"/></center>|
 
 
 ## Dependencies
@@ -16,11 +16,11 @@ Gazebo simulation of Dpoom, based on turtlebot3 simulation.
 - ros-melodic-turtlebot3-*
 
 ## Installing
-On your catkin_ws,
+On your catkin_ws/src,
 ```
 git clone https://github.com/SeunghyunLim/Dpoom_gazebo.git
 ```
-and catkin_make.
+and 'cd ~/catkin_ws && catkin_make'
 
 ## Run
 for launching Gazebo,
