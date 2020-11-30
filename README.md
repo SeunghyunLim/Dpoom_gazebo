@@ -1,6 +1,13 @@
 # Dpoom_gazebo
 Gazebo simulation of Dpoom, based on turtlebot3 simulation.
 
+<center><img src="https://github.com/SeunghyunLim/Dpoom_gazebo/blob/master/gif/dpoom_gazebo.gif" alt="drawing" width="720"/></center>
+
+| Dpoom in real world | Dpoom in Gazebo |
+|---|---|
+|<center><img src="https://github.com/SeunghyunLim/Dpoom_gazebo/blob/master/img/dpoom_real.png" alt="drawing" width="360"/></center>|<center><img src="https://github.com/SeunghyunLim/Dpoom_gazebo/blob/master/img/dpoom_gazebo.png" alt="drawing" width="480"/></center>|
+
+
 ## Dependencies
 - Ubuntu 18.04
 - ROS melodic
