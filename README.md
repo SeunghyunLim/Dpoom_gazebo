@@ -23,15 +23,17 @@ git clone https://github.com/SeunghyunLim/Dpoom_gazebo.git
 and catkin_make.
 
 ## Run
+for launching Gazebo,
 ```
 export TURTLEBOT3_MODEL=dpoom
 roslaunch dpoom_gazebo dpoom.launch
 ```
+for teleop keyboard,
 ```
 export TURTLEBOT3_MODEL=waffle_pi
 roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch
 ```
-# for Rviz visualization
+for Rviz visualization,
 ```
 rosrun rviz rviz -d dpoom_rviz.rviz
 ```
