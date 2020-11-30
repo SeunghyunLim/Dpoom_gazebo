@@ -1,5 +1,6 @@
 # Dpoom_gazebo
-Gazebo simulation of Dpoom, based on turtlebot3 simulation.
+* This reopsitory contains __Gazebo simulation of Dpoom__, based on turtlebot3 simulation.
+* You can visit our indoor SLAM robot in this page, [Project Dpoom](https://shinkansan.github.io/2019-UGRP-DPoom/)
 
 <center><img src="https://github.com/SeunghyunLim/Dpoom_gazebo/blob/master/gif/dpoom_gazebo.gif" alt="drawing" width="720"/></center>
 
