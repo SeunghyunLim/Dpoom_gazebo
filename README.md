@@ -44,5 +44,22 @@ rosrun rviz rviz -d dpoom_rviz.rviz
 * Type : PointCloud2
 * ROS topic : /camera/depth/points, /camera/depth/image_raw
 
-## Reference
-https://github.com/ROBOTIS-GIT/turtlebot3_simulations
+## RGB-D Sensor Tilting
+* You can tilt the sensor by changing pitch value of the _camera_rgb_joint_ in [dpoom.urdf.xacro](https://github.com/SeunghyunLim/Dpoom_gazebo/blob/master/urdf/dpoom.urdf.xacro)
+```
+  <joint name="camera_rgb_joint" type="fixed">
+    <!--You can tilt the sensor by changing the value of pitch
+        Ex) <origin xyz="0.003 0.011 0.009" rpy="0 0.3 0"/>-->
+    <origin xyz="0.003 0.011 0.009" rpy="0 0 0"/>
+    <parent link="camera_link"/>
+    <child link="camera_rgb_frame"/>
+  </joint>
+```
+
+| Default | Tilted by 0.3 rad |
+|---|---|
+|<center><img src="https://github.com/SeunghyunLim/Dpoom_gazebo/blob/master/img/original.png" alt="drawing" width="335"/></center>|<center><img src="https://github.com/SeunghyunLim/Dpoom_gazebo/blob/master/img/tilt.png" alt="drawing" width="335"/></center>|
+
+## References
+* https://github.com/ROBOTIS-GIT/turtlebot3_simulations
+* http://gazebosim.org/tutorials?tut=ros_depth_camera&cat=connect_ros
