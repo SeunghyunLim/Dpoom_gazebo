@@ -2,7 +2,7 @@
 <robot name="Dpoom" xmlns:xacro="http://ros.org/wiki/xacro">
   <xacro:include filename="$(find dpoom_gazebo)/urdf/common_properties.xacro"/>
   <xacro:include filename="$(find dpoom_gazebo)/urdf/dpoom.gazebo.xacro"/>
-  
+
   <link name="base_footprint"/>
 
   <joint name="base_joint" type="fixed">
@@ -194,6 +194,8 @@
   </link>
 
   <joint name="camera_rgb_joint" type="fixed">
+    <!--You can tilt the sensor by changing the value of pitch-->
+    <!--Ex) <origin xyz="0.003 0.011 0.009" rpy="0 0.3 0"/>-->
     <origin xyz="0.003 0.011 0.009" rpy="0 0 0"/>
     <parent link="camera_link"/>
     <child link="camera_rgb_frame"/>
