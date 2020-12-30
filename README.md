@@ -60,6 +60,47 @@ rosrun rviz rviz -d dpoom_rviz.rviz
 |---|---|
 |<center><img src="https://github.com/SeunghyunLim/Dpoom_gazebo/blob/master/img/original.png" alt="drawing" width="335"/></center>|<center><img src="https://github.com/SeunghyunLim/Dpoom_gazebo/blob/master/img/tilt.png" alt="drawing" width="335"/></center>|
 
+## RGB-D Sensor Height change
+* You can change the sensor height by changing z origin value of the _camera_joint_in [dpoom.urdf.xacro](https://github.com/SeunghyunLim/Dpoom_gazebo/blob/master/urdf/dpoom.urdf.xacro)
+```
+  <joint name="camera_joint" type="fixed">
+    <!--You can change the hight of the sensor by changing the value of origin z. 
+        Total view-height is sum of this value and "camera_link"'s origin z value, which is 0.013
+        Also, for visualization, the change in this part should be considered in "camera_rgb_frame".
+        (Original height is 0.12m, so z should be 0.12 - 0.013 = 0.107)
+
+     Ex) <origin xyz="0.073 -0.011 0.107" rpy="0 0 0"/>
+
+     -->
+    <origin xyz="0.073 -0.011 0.107" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="camera_link"/>
+  </joint>
+```
+* For proper mesh visualization of the sensor, the change from above should be considered in _camera_rgb_frame_ of [dpoom.urdf.xacro](https://github.com/SeunghyunLim/Dpoom_gazebo/blob/master/urdf/dpoom.urdf.xacro)
+```
+  <link name="camera_rgb_frame">
+    <!--Original value of visual origin is xyz="0 0 -0.01"
+        if you changed the sensor height in "camera_joint", z should be deducted by the
+        height change.
+
+    EX) if you change the sensor height to 13cm(0.13m), which means that you changed 
+        "camera_joint" z from 0.107 to 0.117, the visual z origin should be changed 
+        from -0.01 to -0.11
+
+    -->
+    <visual>
+      <origin xyz="0 0 -0.01" rpy="-1.57 0 -1.57"/>
+      <geometry>
+        <mesh filename="package://dpoom_gazebo/meshes/sensors/d435.dae" scale="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+```
+* Original sensor height should be fixed to 12cm(from bottom to the center of the sensor).
+* The cylinder below has 12cm height, so you can check the sensor height is fixed to 12cm.
+<center><img src="https://github.com/SeunghyunLim/Dpoom_gazebo/blob/master/img/rviz.png" alt="drawing" width="720"/></center>
+
 ## References
 * https://github.com/ROBOTIS-GIT/turtlebot3_simulations
 * http://gazebosim.org/tutorials?tut=ros_depth_camera&cat=connect_ros
