@@ -179,7 +179,7 @@
   </link>
 
   <joint name="camera_joint" type="fixed">
-    <!--You can change the hight of the sensor by changing the value of origin z. 
+    <!--You can change the hight of the sensor by changing the value of origin z.
         Total view-height is sum of this value and "camera_link"'s origin z value, which is 0.013
         Also, for visualization, the change in this part should be considered in "camera_rgb_frame".
         (Original height is 0.12m, so z should be 0.12 - 0.013 = 0.107)
@@ -217,9 +217,9 @@
         if you changed the sensor height in "camera_joint", z should be deducted by the
         height change.
 
-    EX) if you change the sensor height to 13cm(0.13m), which means that you changed 
+    EX) if you change the sensor height to 13cm(0.13m), which means that you changed
         "camera_joint" z from 0.107 to 0.117, the visual z origin should be changed 
-        from -0.01 to -0.11
+        from -0.01 to -0.02
 
     -->
     <visual>
