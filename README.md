@@ -17,6 +17,7 @@
 - linux-headers-generic
 - ros-melodic-turtlebot3-*
 
+
 ## Installing
 On your catkin_ws/src,
 ```
@@ -43,6 +44,28 @@ rosrun rviz rviz -d dpoom_rviz.rviz
 ## Topic
 * Type : PointCloud2
 * ROS topic : /camera/depth/points, /camera/depth/image_raw
+
+## Gazebo Environments
+* You can select the simulation environment if you want.
+* Basically, _dpoom.launch_ has empty world for Gazebo. (No obstacles, but just the ground.)
+### Indoor Office by Clearpath Robotics
+If you want to simulate in indoor office environment,
+- cpr_office_gazebo
+On your catkin_ws/src,
+```
+git clone https://github.com/clearpathrobotics/cpr_gazebo.git
+```
+and move __cpr_office_gazebo__ to catkin_ws/src, then 'cd ~/catkin_ws && catkin_make'
+* _dpoom_office.launch_ has indoor office environment, which is from Clearpath Robotics. [check](https://github.com/clearpathrobotics/cpr_gazebo)
+
+<center><img src="https://github.com/SeunghyunLim/Dpoom_gazebo/blob/master/img/dpoom_office.png" alt="drawing" width="720"/></center>
+
+### Turtlebot3_world by ROBOTIS
+* _dpoom_turtle.launch_ is based on turtlebot3_world env, which is from ROBOTIS. [check](https://github.com/ROBOTIS-GIT/turtlebot3_simulations/tree/master/turtlebot3_gazebo)
+
+<center><img src="https://github.com/SeunghyunLim/Dpoom_gazebo/blob/master/img/dpoom_turtle.png" alt="drawing" width="720"/></center>
+
+
 
 ## RGB-D Sensor Tilting
 * You can tilt the sensor by changing pitch value of the _camera_rgb_joint_ in [dpoom.urdf.xacro](https://github.com/SeunghyunLim/Dpoom_gazebo/blob/master/urdf/dpoom.urdf.xacro)
@@ -101,6 +124,8 @@ rosrun rviz rviz -d dpoom_rviz.rviz
 * The cylinder below has 12cm height, so you can check the sensor height is fixed to 12cm.
 <center><img src="https://github.com/SeunghyunLim/Dpoom_gazebo/blob/master/img/rviz.png" alt="drawing" width="720"/></center>
 
+
 ## References
 * https://github.com/ROBOTIS-GIT/turtlebot3_simulations
 * http://gazebosim.org/tutorials?tut=ros_depth_camera&cat=connect_ros
+* https://github.com/clearpathrobotics/cpr_gazebo
