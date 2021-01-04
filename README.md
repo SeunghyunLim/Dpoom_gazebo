@@ -86,7 +86,7 @@ rosrun rviz rviz -d dpoom_rviz.rviz
 
     EX) if you change the sensor height to 13cm(0.13m), which means that you changed 
         "camera_joint" z from 0.107 to 0.117, the visual z origin should be changed 
-        from -0.01 to -0.11
+        from -0.01 to -0.02
 
     -->
     <visual>
