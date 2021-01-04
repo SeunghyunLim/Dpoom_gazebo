@@ -46,7 +46,7 @@ rosrun rviz rviz -d dpoom_rviz.rviz
 * ROS topic : /camera/depth/points, /camera/depth/image_raw
 
 ## Gazebo Environments
-* You can select the simulation environment; [empty](#run), [office](#1.-indoor-office-by-clearpath-robotics), [turtlebot3_world](#2.-turtlebot3_world-by-robotis).
+* You can select the simulation environment; [empty](#run), [office](#1-indoor-office-by-clearpath-robotics), [turtlebot3_world](#2-turtlebot3_world-by-robotis).
 * Basically, _dpoom.launch_ has empty world for Gazebo. (No obstacles, but just the ground.)
 ### 1. Indoor Office by Clearpath Robotics
 If you want to simulate in indoor office environment,
