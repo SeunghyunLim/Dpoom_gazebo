@@ -137,9 +137,11 @@ def listener():
 
 direc = 0
 
+voxel_size = 0.3
+
 def main():
 	# Configure depth and color streams
-	global depth_scale, ROW, COL, GRN_ROI, bridge, direc
+	global depth_scale, ROW, COL, GRN_ROI, bridge, direc, voxel_size
 	fpsFlag = False
 	numFrame = 0
 	fps = 0.0
@@ -162,27 +164,67 @@ def main():
 			print("NOT CONNECTED")
 			sleep(0.1)
 			continue
-
+			
+		t1 = time.time()
 		points = pc2.read_points(points_raw, skip_nans=True, field_names=("x", "y", "z"))
-		points_plane_x = []
-		points_plane_y = []
-		points_plane_z = []
+		points = np.array(list(points), dtype=np.float32)
+		#print(len(points))
+
+		t2 = time.time()
+		#print("length pre-processed points: {}".format(len(points)))
+		np_vox = np.ceil((np.max(points, axis=0) - np.min(points, axis=0)) / voxel_size)
+		#print(np_vox)
+
+		non_empty_voxel_keys, inverse, nb_pts_per_voxel = np.unique(((points - np.min(points, axis=0)) // voxel_size).astype(int), axis=0, return_inverse=True, return_counts=True)
+		#print('Non_empty_voxel_keys : {}'.format(non_empty_voxel_keys))
+		idx_pts_sorted = np.argsort(inverse)
+		#print(len(non_empty_voxel_keys))
+
+		voxel_grid = {}
+		#print(voxel_grid)
+		grid_barycenter, grid_candidate_center = [], []
+		last_seen = int(0)
+
+		for idx, vox in enumerate(non_empty_voxel_keys):
+			voxel_grid[tuple(vox)] = points[idx_pts_sorted[int(last_seen):int(last_seen + nb_pts_per_voxel[idx])]]
+			grid_barycenter.append(np.mean(voxel_grid[tuple(vox)], axis=0))
+			grid_candidate_center.append(voxel_grid[tuple(vox)][np.linalg.norm(voxel_grid[tuple(vox)] - np.mean(voxel_grid[tuple(vox)], axis=0), axis=1).argmin()])
+			last_seen += nb_pts_per_voxel[idx]
+		points = np.array(filter(lambda x: x[0] != 0, list(grid_candidate_center)))
+		t3 = time.time()
+		points_layer = []
 		for i, p in enumerate(points):
-			#if i % 500 == 0:
-			if abs(-p[1] - 0.3) < 0.02: # points are at 0.2m higher height than depth camera
+			#if True:
+			if -p[1] > 0.1 and -p[1] < 0.6:
+			#if abs(-p[1] - 0.3) < 0.06: # points are at 0.2m higher height than depth camera
 				# forward:x  . right:y,  up:z
+				points_layer.append([p[0], p[2], -p[1]])
+				'''
 				points_plane_x.append(p[0])
 				points_plane_y.append(p[2])
 				points_plane_z.append(-p[1])
-		print(len(points_plane_x))
+				'''
+		samples = np.array(points_layer)
+		print("time took")
+		print(t2-t1)
+		print(t3-t2)
+		print(time.time() - t3)
+
+		#print("Length in 1st processing: {}, in 2nd processing: {}".format(len(points), len(samples)))
 		#fig = plt.figure()
 		#ax = fig.gca(projection='3d')
 		#ax.scatter3D(points_plane_x, points_plane_y, points_plane_z)
 		#ax.set_xlabel("x")
 		#ax.set_ylabel("y")
 		#ax.set_zlabel("z")
-
-		plt.scatter(points_plane_x, points_plane_y)
+		plt.scatter(points[:,0], points[:,2], label='voxel grid filtering')
+		plt.scatter(samples[:,0], samples[:,1], label='height filtering')
+		plt.xlim(-3,3)
+		plt.ylim(0,6)
+		plt.legend()
+		plt.title("Top view points after filter processing")
+		plt.xlabel("x (m)")
+		plt.ylabel("y (m)")
 		plt.pause(0.05)
 		plt.cla()
 		plt.clf()
