@@ -1,7 +1,7 @@
 # ECSC on the opencv image to quit
 
 import numpy as np
-#import cv2
+import cv2
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import math
@@ -125,8 +125,7 @@ def cmd_callback(data):
 def listener():
 	rospy.Subscriber("/camera/depth/points", PointCloud2, points_callback)
 	rospy.Subscriber("/camera/color/image_raw/compressed", CompressedImage, image_callback)
-	if args.csv:
-		rospy.Subscriber("/cmd_vel", Twist, cmd_callback)
+
 	# spin() simply keeps python from exiting until this node is stopped
 	rospy.spin()
 

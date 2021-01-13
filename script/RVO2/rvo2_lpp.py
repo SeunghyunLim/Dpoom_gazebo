@@ -4,8 +4,11 @@ import rvo2
 import matplotlib.pyplot as plt
 import numpy as np
 import random
+import rospy
 
 import pc2obs
+
+rospy.init_node('robot_mvs', anonymous=False)
 
 sim = rvo2.PyRVOSimulator(1/60., 15.0, 10, 5.0, 2.0, 0.2, 3.0)
 
@@ -51,6 +54,9 @@ print('Running simulation')
 
 for step in range(1000):
     samples = pc2obs.pc2obs(voxel_size = 0.3)
+    print(samples)
+    if type(samples) == type(False):
+        continue
 
     if step == 200:
         agents_velocity = [(0, 0)]
@@ -79,6 +85,9 @@ for step in range(1000):
     plt.pause(0.001)
     plt.cla()
 
-
+easyGo.stop()
+cv2.destroyAllWindows()
+rospy.signal_shutdown("esc")
+sys.exit(1)
 
 
