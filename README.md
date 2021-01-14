@@ -134,7 +134,6 @@ From
         *iter_x = depth * tan(yAngle);	 
         *iter_y = depth * tan(pAngle);	
         *iter_z = depth;
-        
 ```
 To
 
