@@ -127,15 +127,16 @@ and move __cpr_office_gazebo__ to catkin_ws/src, then 'cd ~/catkin_ws && catkin_
 ## Change the Sensor Orientation
 * Generally, the depth sensor orientation is x-forward & z-top view.
 * However, the _libgazebo_ros_openni_kinect.so_ plugin, which is used in [dpoom.gazebo.xacro](https://github.com/SeunghyunLim/Dpoom_gazebo/blob/master/urdf/dpoom.gazebo.xacro), has different orientation; z-forward & x-top.
-* So, if you want to set the sensor orientation to x-forward & z-top, you need to edit _gazebo_ros_openni_kinect.cpp_ in _gazebo_ros_pkgs/gazebo_plugins/src_.
-from
+* So, if you want to set the sensor orientation to x-forward & z-top, you need to edit __gazebo_ros_openni_kinect.cpp__ in _gazebo_ros_pkgs/gazebo_plugins/src_.
+
+From
 ```
         *iter_x = depth * tan(yAngle);	 
         *iter_y = depth * tan(pAngle);	
         *iter_z = depth;
         
 ```
-to
+To
 
 ```     
         *iter_x = depth; 
