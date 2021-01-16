@@ -124,8 +124,27 @@ and move __cpr_office_gazebo__ to catkin_ws/src, then 'cd ~/catkin_ws && catkin_
 * The cylinder below has 12cm height, so you can check the sensor height is fixed to 12cm.
 <center><img src="https://github.com/SeunghyunLim/Dpoom_gazebo/blob/master/img/rviz.png" alt="drawing" width="720"/></center>
 
+## Change the Sensor Orientation
+* Generally, the depth sensor orientation is x-forward & z-top view.
+* However, the _libgazebo_ros_openni_kinect.so_ plugin, which is used in [dpoom.gazebo.xacro](https://github.com/SeunghyunLim/Dpoom_gazebo/blob/master/urdf/dpoom.gazebo.xacro), has different orientation; z-forward & x-top.
+* So, if you want to set the sensor orientation to x-forward & z-top, you need to edit __gazebo_ros_openni_kinect.cpp__ in _gazebo_ros_pkgs/gazebo_plugins/src_.
 
+From
+```
+        *iter_x = depth * tan(yAngle);	 
+        *iter_y = depth * tan(pAngle);	
+        *iter_z = depth;
+```
+To
+
+```     
+        *iter_x = depth; 
+        *iter_y = -depth * tan(yAngle);
+        *iter_z = -depth * tan(pAngle);
+```
+<center><img src="https://github.com/SeunghyunLim/Dpoom_gazebo/blob/master/img/office_xaxis.png" alt="drawing" width="720"/></center>
 ## References
 * https://github.com/ROBOTIS-GIT/turtlebot3_simulations
 * http://gazebosim.org/tutorials?tut=ros_depth_camera&cat=connect_ros
 * https://github.com/clearpathrobotics/cpr_gazebo
+* https://github.com/ros-simulation/gazebo_ros_pkgs

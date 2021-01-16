@@ -21,7 +21,7 @@ Panels:
     Expanded:
       - /Current View1
     Name: Views
-    Splitter Ratio: 0.5
+    Splitter Ratio: 0.5464683771133423
   - Class: rviz/Time
     Experimental: false
     Name: Time
@@ -132,18 +132,18 @@ Visualization Manager:
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.032472796738147736
-        Y: -0.5816781520843506
-        Z: 0.0005816155462525785
+        X: 0
+        Y: 0
+        Z: 0
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: -1.5697963237762451
+      Pitch: 0.05999999865889549
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.710419654846191
+      Yaw: 3.140000104904175
     Saved:
       - Class: rviz/Orbit
         Distance: 5.057460308074951
@@ -184,4 +184,4 @@ Window Geometry:
     collapsed: false
   Width: 1200
   X: 2088
-  Y: 77
+  Y: 47
