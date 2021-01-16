@@ -152,7 +152,8 @@ def pc2obs(voxel_size = 0.3, plot=False):
 	t1 = time.time()
 	points = pc2.read_points(points_raw, skip_nans=True, field_names=("x", "y", "z"))
 	points = np.array(list(points), dtype=np.float32)
-	#print(len(points))
+	if len(points) == 0:
+		return False
 
 	t2 = time.time()
 	#print("length pre-processed points: {}".format(len(points)))
@@ -210,6 +211,7 @@ def pc2obs(voxel_size = 0.3, plot=False):
 		if args.csv:
 			f.close()
 		sys.exit(1)
+
 	return samples
 
 if __name__ == "__main__":

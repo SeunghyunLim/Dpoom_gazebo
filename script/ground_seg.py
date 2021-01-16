@@ -312,13 +312,13 @@ def LaneHandling(virtual_lane_available, unavailable_thres, n):
 
 
 def GoEasy(direc):
-	if direc == 4:
+	if direc == 4: # Backward
 		easyGo.mvStraight(- SPEED, -1)
-	elif direc == 0 or direc == 1:
+	elif direc == 0 or direc == 1: # Go straight
 		easyGo.mvStraight(SPEED, -1)
-	elif direc == 2:
+	elif direc == 2: # turn left
 		easyGo.mvRotate(ROTATE_SPEED, -1, False)
-	elif direc == 3:
+	elif direc == 3: # turn right
 		easyGo.mvRotate(ROTATE_SPEED, -1, True)
 
 def depth_callback(data):
@@ -350,7 +350,7 @@ def main():
 	# Configure depth and color streams
 	global depth_scale, ROW, COL, GRN_ROI, bridge, direc
 	fpsFlag = False
-	numFrame = 0
+	numFrame = 1
 	fps = 0.0
 
 	bridge = CvBridge()
@@ -384,7 +384,9 @@ def main():
 	#COL=720, ROW=1280
 	# depth_scale = 0.0010000000474974513
 	depth_scale = 1.0
-	startTime = time.time()bridgebridge
+	startTime = time.time()
+	ground_seg_time = 0.0
+	lpp_time = 0.0
 	while True:
 		#print('MORP Wokring')
 		#try:
@@ -406,6 +408,7 @@ def main():
 
 		# first step
 
+		t1 = time.time()
 		global depth_image_raw, color_image_raw, currentStatus, handle_easy
 		if type(depth_image_raw) == type(0) or type(color_image_raw) == type(0):
 			sleep(0.1)
@@ -413,9 +416,10 @@ def main():
 		depth_image, color_image = preGroundSeg(depth_image_raw, color_image_raw)
 		# last step
 		color_image, virtual_lane_available = GroundSeg(depth_image, color_image)
+		t2 = time.time()
 		# handling lane
 		cv2.line(color_image, (0, UNAVAILABLE_THRES), (ROW, UNAVAILABLE_THRES), (0, 255, 0), 2)
-		direc = LaneHandling(virtual_lane_available, UNAVAILABLE_THRES, 1)
+		#print()
 
 
 		if args.csv:
@@ -427,16 +431,19 @@ def main():
 			wr.writerow(temp)
 			# sleep(n secs)
 
-		if direc == 0:
-			currentStatus = "NO OBSTACLE"
-			rospy.set_param('/point_init', True)
-		else:
-			currentStatus = "YES OBSTACLE"
-		#print(direc)
+		t3 = time.time()
+		direc = LaneHandling(virtual_lane_available, UNAVAILABLE_THRES, 1)
 		if handle_easy:
 			easyGo.stopper=handle_easy
 			if args.control:
 				GoEasy(direc) # FIXME
+		t4 = time.time()
+		ground_seg_time += t2-t1
+		lpp_time += t4-t3
+
+		print("ground_seg took: {} sec".format(t2-t1))
+		print("MORP took: {} sec".format(t4-t3))
+		print("Average took: {} sec, {} sec, numFrame {}".format(ground_seg_time/numFrame, lpp_time/numFrame, numFrame))
 			#print('Morp easyGo stoppper :: ' + str(easyGo.stopper))
 		#LaneHandling(virtual_lane_available, UNAVAILABLE_THRES, 1)
 
