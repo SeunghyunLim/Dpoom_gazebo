@@ -37,7 +37,7 @@ if args.csv:
 	wr = csv.writer(f)
 	wr.writerow(["time", \
 				"linear_x", "angular_z", \
-				"deadends"])  
+				"deadends"])
 
 #size of images
 COL= 480
@@ -148,7 +148,7 @@ def pc2obs(voxel_size = 0.3, plot=False):
 		print("NOT CONNECTED")
 		sleep(0.1)
 		return False
-		
+
 	t1 = time.time()
 	points = pc2.read_points(points_raw, skip_nans=True, field_names=("x", "y", "z"))
 	points = np.array(list(points), dtype=np.float32)
@@ -174,11 +174,12 @@ def pc2obs(voxel_size = 0.3, plot=False):
 	t3 = time.time()
 	points_layer = []
 	for i, p in enumerate(points):
-		#if True:
-		if -p[1] > 0.1 and -p[1] < 0.6:
+		#if -p[1] > 0.1 and -p[1] < 0.6:
+		if p[2] > 0.1 and p[2] < 0.6:
 		#if abs(-p[1] - 0.3) < 0.06: # points are at 0.2m higher height than depth camera
 			# forward:x  . right:y,  up:z
-			points_layer.append([p[0], p[2], -p[1]])
+			points_layer.append([-p[1], p[0], p[2]])
+			#points_layer.append([p[0], p[2], -p[1]])
 	samples = np.array(points_layer)
 
 	if plot:
@@ -198,7 +199,7 @@ def pc2obs(voxel_size = 0.3, plot=False):
 		plt.pause(0.05)
 		plt.cla()
 		plt.clf()
-	
+
 	color_image = color_image_raw
 	# Show images
 	cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
