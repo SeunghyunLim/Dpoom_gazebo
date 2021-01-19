@@ -113,7 +113,48 @@
         <interpolate_x>true</interpolate_x>
       </animation>
 
-      <plugin name="actor2_plugin" filename="libActorPlugin.so">
+      <animation name="stand">
+        <filename>stand.dae</filename>
+        <scale>1.000000</scale>
+      </animation>
+
+      <script>
+        <loop>false</loop>
+        <delay_start>0.00000</delay_start>
+        <auto_start>true</auto_start>
+        <trajectory id="0" type="standing">
+          <waypoint>
+            <time>0.0</time>
+            <pose>-2 -2 1.25 0 0 0</pose>
+          </waypoint>
+          <waypoint>
+            <time>3.0</time>
+            <pose>-2 -2 1.25 0 0 0</pose>
+          </waypoint>
+        </trajectory>
+        <trajectory id="1" type="walking">
+          <waypoint>
+            <time>0.0</time>
+            <pose>-2 -2 1.25 0 0 0</pose>
+          </waypoint>
+          <waypoint>
+            <time>10.0</time>
+            <pose>3 2 1.25 0 0 0</pose>
+          </waypoint>
+        </trajectory>
+        <trajectory id="2" type="standing">
+          <waypoint>
+            <time>0.0</time>
+            <pose>3 2 1.25 1.57 0 1.57</pose>
+          </waypoint>
+          <waypoint>
+            <time>10.0</time>
+            <pose>3 2 1.25 1.57 0 1.57</pose>
+          </waypoint>
+        </trajectory>
+      </script>
+
+      <!-- <plugin name="actor2_plugin" filename="libActorPlugin.so">
         <target>3 2 1.24</target>
         <target_weight>1.15</target_weight>
         <obstacle_weight>1.8</obstacle_weight>
@@ -122,7 +163,7 @@
           <model>cafe</model>
           <model>ground_plane</model>
         </ignore_obstacles>
-      </plugin>
+      </plugin> -->
     </actor>
 
     <actor name="actor3">
