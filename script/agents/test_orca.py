@@ -63,9 +63,10 @@ obs = [sim.addObstacle(obs_position) for obs_position in obs_position_list]
 #o1 = sim.addObstacle([(6.1,6.1), (4.1, 6.1), (4.1, 4.1)])
 # obs_position_list = np.array(obs_position_list)
 
-global obs_pos, self_pos
+global obs_pos, self_pos, self_yaw
 obs_pos = []
 self_pos = [0, 0]
+self_yaw = 0.0
 
 def ob1_callback(data):
 	global self_pos
@@ -75,9 +76,10 @@ def ob1_callback(data):
 	_y = data.pose.pose.position.y
 	relative_x = _x - self_pos[0]
 	relative_y = _y - self_pos[1]
-	x2 = math.cos(-self_yaw) * relative_x - math.sin(-self_yaw) * relative_y
-	y2 = math.sin(-self_yaw) * relative_x + math.cos(-self_yaw) * relative_y
+	x2 = math.cos(1.57-self_yaw) * relative_x - math.sin(1.57-self_yaw) * relative_y
+	y2 = math.sin(1.57-self_yaw) * relative_x + math.cos(1.57-self_yaw) * relative_y
 	obs_pos = [[y2, x2]]
+	print(obs_pos)
 
 def self_callback(data):
 	global self_pos, self_yaw
