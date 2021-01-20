@@ -4,7 +4,6 @@ import math
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Imu
 from std_msgs.msg import Float32
-from tf.transformations import euler_from_quaternion
 import time
 PI = 3.1415926535897
 Magic_value = 1.7375

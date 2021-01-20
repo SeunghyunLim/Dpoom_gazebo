@@ -11,14 +11,12 @@ import pc2obs
 
 import easyGo
 
-rospy.init_node('robot_mvs', anonymous=False)
-
 SIMUL_HZ = 10.0
 
 sim = rvo2.PyRVOSimulator(1/SIMUL_HZ, 15.0, 10, 5.0, 2.0, 0.15, 3.0)
 
 # parameter description (implementations in RVOSimulator.cpp)
-# timeStep: 
+# timeStep:
 # neighborDist : max dist (center to center) to other agents
 # maxNeighbors: max num of other agengts the agent takes into account in navigation
 # timeHorizon: min amount of time to compute to be safe with respect to agents
@@ -47,7 +45,7 @@ def GoEasy(direc):
 		easyGo.mvRotate(ROTATE_SPEED, -1, True)
 	elif direc == 5: # stop
 		easyGo.stop()
-		
+
 #MIN_OBS_SIZE = 0.6 / 2
 #MAX_OBS_SIZE = 1.4 / 2
 
@@ -85,12 +83,13 @@ pc2obs_time = 0.0
 lpp_time = 0.0
 for step in range(1000):
 	t1 = time.time()
-	samples = pc2obs.pc2obs(voxel_size = voxel_size)
+	samples, robot_state = pc2obs.pc2obs(voxel_size = voxel_size)
 	t2 = time.time()
 	# print(samples)
 	if type(samples) == type(False):
+		print("not connected")
 		continue
-	
+
 
 	sim.clearObstacle()
 	obs_position_list = [[(x-size, y-size),(x+size, y-size), (x+size, y+size), (x-size, y+size)] for x,y,z in samples]
@@ -103,7 +102,7 @@ for step in range(1000):
 	# always set agent position as origin
 	sim.setAgentPosition(0, (0,0))
 	positions = [sim.getAgentPosition(agent) for agent in agents]
-	
+
 	sim.doStep()
 	#positions = [sim.getAgentPosition(agent) for agent in agents]
 
@@ -120,14 +119,14 @@ for step in range(1000):
 		direc = 1 # go straight
 	elif velocity[0][1] < 0:
 		direc = 4 # backward
-	else: 
+	else:
 		direc = 5 # stop
 	GoEasy(direc)
 	t3 = time.time()
 
 	pc2obs_time += t2-t1
 	lpp_time += t3-t2
-	
+
 	print("pc2obs took: {} sec".format(t2-t1))
 	print("OCRA took: {} sec".format(t3-t2))
 	print("Average took: {} sec, {} sec".format(pc2obs_time/step, lpp_time/step))
@@ -149,8 +148,5 @@ for step in range(1000):
 	print("{:.6f} sec simulated".format(step/SIMUL_HZ))
 
 easyGo.stop()
-cv2.destroyAllWindows()
 rospy.signal_shutdown("esc")
 sys.exit(1)
-
-

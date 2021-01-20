@@ -10,34 +10,21 @@ import sys
 
 import rospy
 import sensor_msgs.point_cloud2 as pc2
-from sensor_msgs.msg import PointCloud2, CompressedImage
+from sensor_msgs.msg import PointCloud2, CompressedImage, PointField
 from geometry_msgs.msg import Twist
+from nav_msgs.msg import Odometry
 
-import easyGo
-from std_msgs.msg import String
+from std_msgs.msg import String, Header
 from cv_bridge import CvBridge, CvBridgeError
 import threading
 from time import sleep
 import csv
 
-import argparse
-parser = argparse.ArgumentParser()
-parser.add_argument('--control', action='store_true')
-parser.add_argument('--plot', action='store_true')
-parser.add_argument('--csv', action='store_true')
-args = parser.parse_args()
-
 global depth_scale, ROW, COL
 global currentStatus
 
-if args.csv:
-	CSV_NAME = "office_01"
-
-	f= open(CSV_NAME+'.csv','w')
-	wr = csv.writer(f)
-	wr.writerow(["time", \
-				"linear_x", "angular_z", \
-				"deadends"])  
+rospy.init_node('pc2obs', anonymous=False)
+pub_state = rospy.Publisher("robot_state", Twist, queue_size=1)
 
 #size of images
 COL= 480
@@ -55,9 +42,16 @@ handle_easy = True
 points_raw = 0
 color_image_raw = 0
 cmd_vel = 0
+robot_state = 0
 
 t = time.time()
 
+
+def euler_from_quaternion(x,y,z,w):
+	t3 = 2.0*(w*z+x*y)
+	t4 = 1.0-2.0*(y*y+z*z)
+	yaw_z = math.atan2(t3,t4)
+	return yaw_z
 #Topview image. src, dst are numpy array.
 #########################Move LAVACON TO EACH EDGES AND TRY AGAIN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 def Topview(src):
@@ -98,18 +92,6 @@ def GroundSeg(depth_image, color_image, stride=80):
 		virtual_lane_available.append(dead_end)
 	return temp_image, virtual_lane_available
 
-def GoEasy(direc):
-	if direc == 4:
-		easyGo.mvStraight(- SPEED, -1)
-	elif direc == 0 or direc == 1:
-		#print("COME HERE")
-		easyGo.mvStraight(SPEED, -1)
-	elif direc == 2:
-		#print("COME HERE2")
-		easyGo.mvRotate(ROTATE_SPEED, -1, False)
-	elif direc == 3:
-		easyGo.mvRotate(ROTATE_SPEED, -1, True)
-
 def points_callback(data):
 	global points_raw
 	points_raw = data
@@ -122,9 +104,22 @@ def cmd_callback(data):
 	global cmd_vel
 	cmd_vel = data
 
+def state_callback(data):
+	global robot_state
+	q = data.pose.pose.orientation
+	yaw = euler_from_quaternion(q.x, q.y, q.z, q.w)
+	twist = Twist()
+	twist.linear.x = data.pose.pose.position.x
+	twist.linear.y = data.pose.pose.position.y
+	twist.angular.z = yaw
+	# pub_state.publish(twist)
+	robot_state = [-twist.linear.y, twist.linear.x, twist.angular.z]
+
 def listener():
 	rospy.Subscriber("/camera/depth/points", PointCloud2, points_callback)
-	rospy.Subscriber("/camera/color/image_raw/compressed", CompressedImage, image_callback)
+	#rospy.Subscriber("/camera/color/image_raw/compressed", CompressedImage, image_callback)
+	# rospy.Subscriber("/gazebo/model_states", ModelStates, state_callback)
+	rospy.Subscriber("/odom", Odometry, state_callback)
 
 	# spin() simply keeps python from exiting until this node is stopped
 	rospy.spin()
@@ -133,27 +128,34 @@ direc = 0
 
 def pc2obs_init():
 	# Configure depth and color streams
-	global bridge
+	global bridge, pub
 
 	bridge = CvBridge()
 
 	realsense_listener = threading.Thread(target=listener)
 	realsense_listener.start()
+	pub = rospy.Publisher("obs_center", PointCloud2, queue_size=1)
 
+fields = [PointField('x',0,PointField.FLOAT32,1), 
+			PointField('y',4,PointField.FLOAT32,1),
+			PointField('z',8,PointField.FLOAT32,1)]
+header = Header()
+header.frame_id = "map"
 
-def pc2obs(voxel_size = 0.3, plot=False):
-	global points_raw, color_image_raw, bridge, currentStatus, handle_easy
+def pc2obs(voxel_size = 0.3, plot=False, ros=True):
+	global points_raw, color_image_raw, robot_state, bridge, currentStatus, handle_easy, pub
 	#print(points_raw)
-	if type(points_raw) == type(0) or type(color_image_raw) == type(0):
+	# if type(points_raw) == type(0) or type(color_image_raw) == type(0):
+	if type(points_raw) == type(0):
 		print("NOT CONNECTED")
 		sleep(0.1)
-		return False
+		return False, False
 		
 	t1 = time.time()
 	points = pc2.read_points(points_raw, skip_nans=True, field_names=("x", "y", "z"))
 	points = np.array(list(points), dtype=np.float32)
 	if len(points) == 0:
-		return False
+		return False, False
 
 	t2 = time.time()
 	#print("length pre-processed points: {}".format(len(points)))
@@ -169,7 +171,7 @@ def pc2obs(voxel_size = 0.3, plot=False):
 		grid_barycenter.append(np.mean(voxel_grid[tuple(vox)], axis=0))
 		grid_candidate_center.append(voxel_grid[tuple(vox)][np.linalg.norm(voxel_grid[tuple(vox)] - np.mean(voxel_grid[tuple(vox)], axis=0), axis=1).argmin()])
 		last_seen += nb_pts_per_voxel[idx]
-	points = np.array(filter(lambda x: x[0] != 0, list(grid_candidate_center)))
+	points = np.array(list(filter(lambda x: x[0] != 0, list(grid_candidate_center))))
 
 	t3 = time.time()
 	points_layer = []
@@ -188,7 +190,8 @@ def pc2obs(voxel_size = 0.3, plot=False):
 		print(time.time() - t3)
 
 		plt.scatter(points[:,0], points[:,2], label='voxel grid filtering')
-		plt.scatter(samples[:,0], samples[:,1], label='height filtering')
+		if len(samples):
+			plt.scatter(samples[:,0], samples[:,1], label='height filtering')
 		plt.xlim(-1.5,1.5)
 		plt.ylim(0,6)
 		plt.legend()
@@ -201,24 +204,43 @@ def pc2obs(voxel_size = 0.3, plot=False):
 	
 	color_image = color_image_raw
 	# Show images
-	cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
-	cv2.imshow('RealSense', color_image)
+	#cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
+	#cv2.imshow('RealSense', color_image)
 	#cv2.imshow('RealSense_depth', depth_image)
 	if cv2.waitKey(1) == 27: #esc
-		easyGo.stop()
 		cv2.destroyAllWindows()
 		rospy.signal_shutdown("esc")
 		if args.csv:
 			f.close()
 		sys.exit(1)
 
-	return samples
+	if ros:
+		pub_pc2 = pc2.create_cloud(header, fields, samples)
+		pub_pc2.header.stamp = rospy.Time.now()
+		pub.publish(pub_pc2)
+
+	return samples, robot_state
 
 if __name__ == "__main__":
-	rospy.init_node('robot_mvs', anonymous=False)
+	import argparse
+	parser = argparse.ArgumentParser()
+	parser.add_argument('--control', action='store_true')
+	parser.add_argument('--plot', action='store_true')
+	parser.add_argument('--csv', action='store_true')
+	args = parser.parse_args()
+
+	if args.csv:
+		CSV_NAME = "office_01"
+
+		f= open(CSV_NAME+'.csv','w')
+		wr = csv.writer(f)
+		wr.writerow(["time", \
+					"linear_x", "angular_z", \
+					"deadends"])  
+
 	pc2obs_init()
 	while True:
-		samples = pc2obs(voxel_size = 0.3, plot=True)
+		samples = pc2obs(voxel_size = 0.3, plot=args.plot)
 		# print(samples)
 	f.close()
 	exit()
