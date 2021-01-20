@@ -10,7 +10,7 @@
   <arg name="first_tb3_yaw"   default=" 0"/>
 
   <arg name="second_tb3_x_pos" default=" 1.0"/>
-  <arg name="second_tb3_y_pos" default="-1.5"/>
+  <arg name="second_tb3_y_pos" default="-1.7"/>
   <arg name="second_tb3_z_pos" default=" 0.2"/>
   <arg name="second_tb3_yaw"   default=" -3.14"/>
 

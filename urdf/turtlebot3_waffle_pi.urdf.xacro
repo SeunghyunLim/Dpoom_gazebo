@@ -13,9 +13,13 @@
 
   <link name="base_link">
     <visual>
-      <origin xyz="-0.064 0 0.0" rpy="0 0 0"/>
+      <!-- <origin xyz="-0.064 0 0.0" rpy="0 0 0"/>
       <geometry>
         <mesh filename="package://turtlebot3_description/meshes/bases/waffle_pi_base.stl" scale="0.001 0.001 0.001"/>
+      </geometry> -->
+      <origin xyz="-0.015 -0.011 0.047" rpy="1.57 0 0"/>
+      <geometry>
+        <mesh filename="package://dpoom_gazebo/meshes/bases/dpoom_stl.stl" scale="0.01 0.01 0.01"/>
       </geometry>
       <material name="light_black"/>
     </visual>

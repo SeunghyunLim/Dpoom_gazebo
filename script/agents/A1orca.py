@@ -6,6 +6,7 @@ import numpy as np
 import random
 import rospy
 import time
+from utils import *
 
 import A1easyGo as easyGo
 
@@ -37,6 +38,7 @@ size = voxel_size/2
 #ROBOT MOVE
 SPEED = 20 # 14
 ROTATE_SPEED = 15 # 25
+
 
 def GoEasy(direc):
 	if direc == 4: # Backward
