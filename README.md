@@ -143,6 +143,8 @@ To
         *iter_z = -depth * tan(pAngle);
 ```
 <center><img src="https://github.com/SeunghyunLim/Dpoom_gazebo/blob/master/img/office_xaxis.png" alt="drawing" width="720"/></center>
+
+
 ## References
 * https://github.com/ROBOTIS-GIT/turtlebot3_simulations
 * http://gazebosim.org/tutorials?tut=ros_depth_camera&cat=connect_ros
