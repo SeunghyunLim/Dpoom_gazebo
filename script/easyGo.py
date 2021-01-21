@@ -30,7 +30,7 @@ def printv(text, verbose):
 
 def stop(verbose=0):
     global stopper
-    print('easyGo::', str(stopper))
+    # print('easyGo::', str(stopper))
     if stopper == False: return
     #Starts a new node
     #rospy.init_node('robot_mvs', anonymous=True)
@@ -49,7 +49,7 @@ def stop(verbose=0):
 
 def mvRotate(speed, angle, clockwise, verbose=0):
     global stopper
-    print('easyGo::', str(stopper))
+    # print('easyGo::', str(stopper))
     if stopper == False: return
     #Starts a new node
     #rospy.init_node('robot_mvs', anonymous=True)
@@ -100,11 +100,12 @@ def mvRotate(speed, angle, clockwise, verbose=0):
 
 def mvCurve(x, y, verbose=0):
     global stopper
-    print('easyGo::', str(stopper))
+    # print('easyGo::', str(stopper))
     if stopper == False: return
     #rospy.init_node('robot_mvs', anonymous=True)
     vel_msg = Twist()
-    vel_msg.linear.x= x   ###??? x == Robot_speed
+    angular_speed = x*2*PI/360
+    vel_msg.linear.x= angular_speed   ###??? x == Robot_speed
     vel_msg.angular.z=y
     velocity_publisher.publish(vel_msg)     ###positive -> clockwise?
 def mvStraight(speed, angle, verbose=0):

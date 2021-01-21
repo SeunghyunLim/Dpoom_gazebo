@@ -11,7 +11,6 @@ import sys
 import rospy
 import sensor_msgs.point_cloud2 as pc2
 from sensor_msgs.msg import PointCloud2, CompressedImage, PointField
-from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 
 from std_msgs.msg import String, Header
@@ -23,19 +22,7 @@ import csv
 global depth_scale, ROW, COL
 global currentStatus
 
-<<<<<<< HEAD
 rospy.init_node('pc2obs', anonymous=False)
-pub_state = rospy.Publisher("robot_state", Twist, queue_size=1)
-=======
-if args.csv:
-	CSV_NAME = "office_01"
-
-	f= open(CSV_NAME+'.csv','w')
-	wr = csv.writer(f)
-	wr.writerow(["time", \
-				"linear_x", "angular_z", \
-				"deadends"])
->>>>>>> 41d1fcf0e0da3d7579f1d5af557c6231d3bf5b39
 
 #size of images
 COL= 480
@@ -119,12 +106,7 @@ def state_callback(data):
 	global robot_state
 	q = data.pose.pose.orientation
 	yaw = euler_from_quaternion(q.x, q.y, q.z, q.w)
-	twist = Twist()
-	twist.linear.x = data.pose.pose.position.x
-	twist.linear.y = data.pose.pose.position.y
-	twist.angular.z = yaw
-	# pub_state.publish(twist)
-	robot_state = [-twist.linear.y, twist.linear.x, twist.angular.z]
+	robot_state = [-data.pose.pose.position.y, data.pose.pose.position.x, -yaw]
 
 def listener():
 	rospy.Subscriber("/camera/depth/points", PointCloud2, points_callback)
@@ -160,13 +142,8 @@ def pc2obs(voxel_size = 0.3, plot=False, ros=True):
 	if type(points_raw) == type(0):
 		print("NOT CONNECTED")
 		sleep(0.1)
-<<<<<<< HEAD
 		return False, False
 		
-=======
-		return False
-
->>>>>>> 41d1fcf0e0da3d7579f1d5af557c6231d3bf5b39
 	t1 = time.time()
 	points = pc2.read_points(points_raw, skip_nans=True, field_names=("x", "y", "z"))
 	points = np.array(list(points), dtype=np.float32)
@@ -192,12 +169,11 @@ def pc2obs(voxel_size = 0.3, plot=False, ros=True):
 	t3 = time.time()
 	points_layer = []
 	for i, p in enumerate(points):
-		#if -p[1] > 0.1 and -p[1] < 0.6:
-		if p[2] > 0.1 and p[2] < 0.6:
+		#if True:
+		if -p[1] > 0.1 and -p[1] < 0.6:
 		#if abs(-p[1] - 0.3) < 0.06: # points are at 0.2m higher height than depth camera
 			# forward:x  . right:y,  up:z
-			points_layer.append([-p[1], p[0], p[2]])
-			#points_layer.append([p[0], p[2], -p[1]])
+			points_layer.append([p[0], p[2], -p[1]])
 	samples = np.array(points_layer)
 
 	if plot:
@@ -218,7 +194,7 @@ def pc2obs(voxel_size = 0.3, plot=False, ros=True):
 		plt.pause(0.05)
 		plt.cla()
 		plt.clf()
-
+	
 	color_image = color_image_raw
 	# Show images
 	#cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
