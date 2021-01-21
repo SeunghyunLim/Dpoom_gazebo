@@ -64,7 +64,7 @@ obs = [sim.addObstacle(obs_position) for obs_position in obs_position_list]
 # obs_position_list = np.array(obs_position_list)
 
 global obs_pos, self_pos, self_yaw
-obs_pos = []
+obs_pos = [[0, 0], [0, 0]]
 self_pos = [0, 0]
 self_yaw = 0.0
 
@@ -74,12 +74,23 @@ def ob1_callback(data):
 	global self_yaw
 	_x = data.pose.pose.position.x
 	_y = data.pose.pose.position.y
-	relative_x = _x - self_pos[0]
-	relative_y = _y - self_pos[1]
+	relative_x = _x - self_pos[1]
+	relative_y = _y - self_pos[0]
 	x2 = math.cos(1.57-self_yaw) * relative_x - math.sin(1.57-self_yaw) * relative_y
 	y2 = math.sin(1.57-self_yaw) * relative_x + math.cos(1.57-self_yaw) * relative_y
-	obs_pos = [[y2, x2]]
-	print(obs_pos)
+	obs_pos[0] = [x2, y2]
+
+def ob2_callback(data):
+	global self_pos
+	global obs_pos
+	global self_yaw
+	_x = data.pose.pose.position.x
+	_y = data.pose.pose.position.y
+	relative_x = _x - self_pos[1]
+	relative_y = _y - self_pos[0]
+	x2 = math.cos(1.57-self_yaw) * relative_x - math.sin(1.57-self_yaw) * relative_y
+	y2 = math.sin(1.57-self_yaw) * relative_x + math.cos(1.57-self_yaw) * relative_y
+	obs_pos[1] = [x2, y2]
 
 def self_callback(data):
 	global self_pos, self_yaw
@@ -96,6 +107,7 @@ def listener():
 	print('listener ready')
 	rospy.Subscriber("/tb3_0/odom", Odometry, self_callback)
 	rospy.Subscriber("/tb3_1/odom", Odometry, ob1_callback)
+	rospy.Subscriber("/tb3_2/odom", Odometry, ob2_callback)
 	rospy.spin()
 
 
@@ -126,7 +138,7 @@ def orca():
 		t1 = time.time()
 		#samples = pc2obs.pc2obs(voxel_size = voxel_size)
 		samples = np.array(obs_pos)
-		print(samples)
+		#print(samples)
 		t2 = time.time()
 		# print(samples)
 		if type(samples) == type(False):
@@ -173,20 +185,20 @@ def orca():
 		# print("OCRA took: {} sec".format(t3-t2))
 		# print("Average took: {} sec, {} sec".format(pc2obs_time/(step+1), lpp_time/(step+1)))
 
-		plt.arrow(positions[0][0], positions[0][1], velocity[0][0], velocity[0][1], width=0.05)
-		for obs_position in obs_position_list:
-			plt.plot(np.hstack([obs_position[:,0],obs_position[0][0]]), np.hstack([obs_position[:,1],obs_position[0][1]]))
-		plt.scatter(positions[:,0], positions[:,1], label='agents')
-		if len(samples) != 0:
-			plt.scatter(samples[:,0], samples[:,1], label='samples')
-		plt.legend()
-		plt.title("Trajectories of the agnets")
-		plt.xlabel("x (m)")
-		plt.ylabel("y (m)")
-		plt.xlim(-5,5)
-		plt.ylim(-2,8)
-		plt.pause(0.001)
-		plt.cla()
+		# plt.arrow(positions[0][0], positions[0][1], velocity[0][0], velocity[0][1], width=0.05)
+		# for obs_position in obs_position_list:
+		# 	plt.plot(np.hstack([obs_position[:,0],obs_position[0][0]]), np.hstack([obs_position[:,1],obs_position[0][1]]))
+		# plt.scatter(positions[:,0], positions[:,1], label='agents')
+		# if len(samples) != 0:
+		# 	plt.scatter(samples[:,0], samples[:,1], label='samples')
+		# plt.legend()
+		# plt.title("Trajectories of the agnets")
+		# plt.xlabel("x (m)")
+		# plt.ylabel("y (m)")
+		# plt.xlim(-5,5)
+		# plt.ylim(-2,8)
+		# plt.pause(0.001)
+		# plt.cla()
 		# print("{:.6f} sec simulated".format(step/SIMUL_HZ))
 		time.sleep(0.1)
 

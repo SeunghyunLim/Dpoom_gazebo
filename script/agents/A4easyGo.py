@@ -16,9 +16,9 @@ def main():
     print('EasyGo Activated')
     #rospy.init_node('robot_easygo', anonymous=False)
     global velocity_publisher
-    velocity_publisher = rospy.Publisher('tb3_0/cmd_vel', Twist, queue_size=10)
+    velocity_publisher = rospy.Publisher('tb3_3/cmd_vel', Twist, queue_size=10)
     imu_sub = rospy.Subscriber('imu/yaw', Imu, imu_callback)
-    enc_sub = rospy.Subscriber('tb3_0/cmd_vel', Twist, encoder_callback)
+    enc_sub = rospy.Subscriber('tb3_3/cmd_vel', Twist, encoder_callback)
     #except rospy.ROSInterruptException:
         #pass
 
@@ -35,7 +35,7 @@ def stop(verbose=0):
     if stopper == False: return
     #Starts a new node
     #rospy.init_node('robot_mvs', anonymous=True)
-    velocity_publisher = rospy.Publisher('tb3_0/cmd_vel', Twist, queue_size=10)
+    velocity_publisher = rospy.Publisher('tb3_3/cmd_vel', Twist, queue_size=10)
     vel_msg = Twist()
     vel_msg.linear.x=0
     vel_msg.linear.y=0
