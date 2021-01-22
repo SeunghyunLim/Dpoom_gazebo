@@ -22,6 +22,7 @@ import sys
 
 from sensor_msgs.msg import Image, CompressedImage
 from geometry_msgs.msg import Twist
+from nav_msgs.msg import Odometry
 import rospy
 
 import easyGo
@@ -39,7 +40,6 @@ parser.add_argument('--csv', action='store_true')
 args = parser.parse_args()
 
 global depth_scale, ROW, COL
-global currentStatus
 
 if args.csv:
 	CSV_NAME = "office_01"
@@ -57,6 +57,11 @@ ROW = 640
 #ROBOT MOVE
 SPEED = 15
 ROTATE_SPEED = 25
+ANGULAR_SPEED = 0.2
+
+# Set goal position
+GOAL_X = 0
+GOAL_Y = 10
 
 VERTICAL_CORRECTION = 0.35 # 0.15 #0.45  #parameter of correction for parabola to linear
 WARP_PARAM = 0.45  #value should be 0.0 ~ 1.0. Bigger get more warped. 0.45
@@ -66,16 +71,21 @@ UNAVAILABLE_THRES = 170 #  #The index of col that is threshold of unavailable vi
 ROBOT_WIDTH_LIST = [2,3,4,5]
 ROBOT_LEFT = 1
 ROBOT_RIGHT = 6
-currentStatus = ""
 font = cv2.FONT_HERSHEY_SCRIPT_SIMPLEX
 fontScale = 1.5
 yellow = (0, 255, 255)
-handle_easy = True
 depth_image_raw = 0
 color_image_raw = 0
+robot_state = 0
 cmd_vel = 0
 
 t = time.time()
+
+def euler_from_quaternion(x,y,z,w):
+	t3 = 2.0*(w*z+x*y)
+	t4 = 1.0-2.0*(y*y+z*z)
+	yaw_z = math.atan2(t3,t4)
+	return yaw_z
 
 #Topview image. src, dst are numpy array.
 def Topview(src):
@@ -155,16 +165,6 @@ def verticalGround(depth_image2, images, numCol, plot):
 		####################################################################################################
 		gradient_from_original = (abs_y[(COL - idx)] - abs_y[ground_center_idx[0]]) / float(abs_x[(COL - idx)] - abs_x[ground_center_idx[0]])
 		gradient_from_current = (abs_y[(COL - idx)] - abs_y[ground_center_idx[i]]) / float(abs_x[(COL - idx)] - abs_x[ground_center_idx[i]])
-		'''
-		print("#######")
-		print("idx " + str(COL-idx))
-		print("original" + str(gradient_from_original))
-		print("current" + str(gradient_from_current))
-		print(abs_y[(COL - idx)])
-		print(abs_y[ground_center_idx[0]])
-		print(abs_x[(COL - idx)])
-		print(abs_x[ground_center_idx[0]])
-		'''
 
 		#print("dist" + str(_640col[COL - idx]))
 		if abs(gradient_from_original + 0.13) < 0.2 and abs(gradient_from_current + 0.133) < 0.15:   #These number are carefully selected
@@ -176,22 +176,12 @@ def verticalGround(depth_image2, images, numCol, plot):
 			hurdleCount = 0
 			# print(idx)
 			idx += 20
-		elif hurdleCount > 2:
+		elif hurdleCount > 1:
 			break
 		else:
 			hurdleCount += 1
-			idx += 40
-		#except:
-			#print("FOUND NONE")
-	#print(abs_y)
-	#print(abs_x)
-	'''
-	print(abs_y[ground_center_idx[-1]])
-	print(abs_y[ground_center_idx[0]])
-	print(abs_x[ground_center_idx[-1]])
-	print(abs_x[ground_center_idx[0]])
-	print((abs_y[ground_center_idx[-1]]-abs_y[ground_center_idx[0]])/float(abs_x[ground_center_idx[-1]]-abs_x[ground_center_idx[0]]))
-	'''
+			idx += 20
+
 	if plot:
 		#print(abs_x[ground_center_idx[0]], abs_y[ground_center_idx[0]])
 		#print(abs_x[ground_center_idx[-1]], abs_y[ground_center_idx[-1]])
@@ -314,7 +304,7 @@ def LaneHandling(virtual_lane_available, unavailable_thres, n):
 def GoEasy(direc):
 	if direc == 4: # Backward
 		easyGo.mvStraight(- SPEED, -1)
-	elif direc == 0 or direc == 1: # Go straight
+	elif direc == 1: # Go straight
 		easyGo.mvStraight(SPEED, -1)
 	elif direc == 2: # turn left
 		easyGo.mvRotate(ROTATE_SPEED, -1, False)
@@ -329,6 +319,11 @@ def image_callback(data):
 	global color_image_raw
 	color_image_raw = bridge.compressed_imgmsg_to_cv2(data, "bgr8")
 
+def state_callback(data):
+	global robot_state
+	q = data.pose.pose.orientation
+	yaw = euler_from_quaternion(q.x, q.y, q.z, q.w)
+	robot_state = [-data.pose.pose.position.y, data.pose.pose.position.x, -yaw]
 
 def cmd_callback(data):
 	global cmd_vel
@@ -339,16 +334,15 @@ def listener():
 	bridge = CvBridge()
 	rospy.Subscriber("/camera/depth/image_raw", Image, depth_callback)
 	rospy.Subscriber("/camera/color/image_raw/compressed", CompressedImage, image_callback)
+	rospy.Subscriber("/odom", Odometry, state_callback)
 	if args.csv:
 		rospy.Subscriber("/cmd_vel", Twist, cmd_callback)
 	# spin() simply keeps python from exiting until this node is stopped
 	rospy.spin()
 
-direc = 0
-
 def main():
 	# Configure depth and color streams
-	global depth_scale, ROW, COL, GRN_ROI, bridge, direc
+	global depth_scale, ROW, COL, GRN_ROI, bridge
 	fpsFlag = False
 	numFrame = 1
 	fps = 0.0
@@ -358,58 +352,13 @@ def main():
 	realsense_listener = threading.Thread(target=listener)
 	realsense_listener.start()
 
-	# when using real sensor
-	''' 
-	while 1:
-		try:
-			
-			pipeline = rs.pipeline()
-			config = rs.config()
-			config.enable_stream(rs.stream.depth, ROW, COL, rs.format.z16, 30)
-			config.enable_stream(rs.stream.color, ROW, COL, rs.format.bgr8, 30)
-			
-			# Start streaming
-
-			#profile = pipeline.start(config)
-
-			#depth_sensor = profile.get_device().first_depth_sensor()
-			#depth_scale = depth_sensor.get_depth_scale()
-			#print("Depth Scale is: ", depth_scale)
-			#frames = pipeline.wait_for_frames()
-			break
-		except:
-			pass
-	'''
-
-	#COL=720, ROW=1280
-	# depth_scale = 0.0010000000474974513
 	depth_scale = 1.0
 	startTime = time.time()
 	ground_seg_time = 0.0
 	lpp_time = 0.0
 	while True:
-		#print('MORP Wokring')
-		#try:
-		#if depth_image_raw == None: continue
-		# Wait for a coherent pair of frames: depth and color
-		#frames = pipeline.wait_for_frames()
-		#depth_frame = frames.get_depth_frame()
-		#depth_frame = cv_image
-		#color_frame
-
-		#color_frame = frames.get_color_frame()
-		#if not depth_frame or not color_frame:
-		#	continuebridge
-
-		# Convert images to numpy arrays
-		#depth_image = np.asanyarray(depth_frame.get_data(), dtype=float)
-		#color_image = np.asanyarray(color_frame.get_data())
-		# print(depth_image[360][550], len(depth_image[0]), str(depth_image[360][550] * depth_scale) + "m")
-
-		# first step
-
 		t1 = time.time()
-		global depth_image_raw, color_image_raw, currentStatus, handle_easy
+		global depth_image_raw, color_image_raw, robot_state
 		if type(depth_image_raw) == type(0) or type(color_image_raw) == type(0):
 			sleep(0.1)
 			continue
@@ -419,8 +368,6 @@ def main():
 		t2 = time.time()
 		# handling lane
 		cv2.line(color_image, (0, UNAVAILABLE_THRES), (ROW, UNAVAILABLE_THRES), (0, 255, 0), 2)
-		#print()
-
 
 		if args.csv:
 			virtual_lane_available = np.array(virtual_lane_available)
@@ -429,13 +376,18 @@ def main():
 			temp = [(time.time()-t), cmd_vel.linear.x, cmd_vel.angular.z]
 			temp.extend([x for x in virtual_lane_available])
 			wr.writerow(temp)
-			# sleep(n secs)
 
 		t3 = time.time()
 		direc = LaneHandling(virtual_lane_available, UNAVAILABLE_THRES, 1)
-		if handle_easy:
-			easyGo.stopper=handle_easy
-			if args.control:
+		if args.control:
+			if direc == 0:
+				diff_angle = (-robot_state[2] + math.atan2(GOAL_X - robot_state[0], GOAL_Y - robot_state[1]))
+				if diff_angle > 0:
+					v_ang = ANGULAR_SPEED * min(diff_angle/(math.pi/2), 1) 
+				else:
+					v_ang = ANGULAR_SPEED * max(diff_angle/(math.pi/2), -1)
+				easyGo.mvCurve(SPEED, -v_ang)
+			else:
 				GoEasy(direc) # FIXME
 		t4 = time.time()
 		ground_seg_time += t2-t1
@@ -444,13 +396,6 @@ def main():
 		print("ground_seg took: {} sec".format(t2-t1))
 		print("MORP took: {} sec".format(t4-t3))
 		print("Average took: {} sec, {} sec, numFrame {}".format(ground_seg_time/numFrame, lpp_time/numFrame, numFrame))
-			#print('Morp easyGo stoppper :: ' + str(easyGo.stopper))
-		#LaneHandling(virtual_lane_available, UNAVAILABLE_THRES, 1)
-
-		# Stack both images horizontally
-		# images = np.hstack((color_image, depth_colormap))
-
-		# Show images
 		cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
 		cv2.imshow('RealSense', color_image)
 		#cv2.imshow('RealSense_depth', depth_image)
@@ -461,23 +406,9 @@ def main():
 			if args.csv:
 				f.close()
 			sys.exit(1)
-		#	break
-
+			break
 		# FPS
 		numFrame += 1
-
-		#if cv2.waitKey(1) == ord('f'):
-		#	endTime = time.time()
-		#	fps = round((float)(numFrame) / (endTime - startTime), 2)
-		#	print("###FPS = " + str(fps) + " ###")
-
-		#except Exception:
-		#	print("Error")
-			#pipeline.stop()
-			#easyGo.stop()
-
-	# Stop streaming
-	#pipeline.stop()
 	easyGo.stop()
 
 if __name__ == "__main__":
