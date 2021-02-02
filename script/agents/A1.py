@@ -215,20 +215,20 @@ def orca(verbose=False):
         pc2obs_time += t2-t1
         lpp_time += t3-t2
 
-        plt.arrow(positions[0][0], positions[0][1], velocity[0][0], velocity[0][1], width=0.05)
-        for obs_position in obs_position_list:
-            plt.plot(np.hstack([obs_position[:,0],obs_position[0][0]]), np.hstack([obs_position[:,1],obs_position[0][1]]))
-        plt.scatter(positions[:,0], positions[:,1], label='agents')
-        if len(samples) != 0:
-            plt.scatter(samples[:,0], samples[:,1], label='samples')
-        plt.legend()
-        plt.title("Trajectories of the agnets")
-        plt.xlabel("x (m)")
-        plt.ylabel("y (m)")
-        plt.xlim(-5,5)
-        plt.ylim(-2,8)
-        plt.pause(0.001)
-        plt.cla()
+        # plt.arrow(positions[0][0], positions[0][1], velocity[0][0], velocity[0][1], width=0.05)
+        # for obs_position in obs_position_list:
+        #     plt.plot(np.hstack([obs_position[:,0],obs_position[0][0]]), np.hstack([obs_position[:,1],obs_position[0][1]]))
+        # plt.scatter(positions[:,0], positions[:,1], label='agents')
+        # if len(samples) != 0:
+        #     plt.scatter(samples[:,0], samples[:,1], label='samples')
+        # plt.legend()
+        # plt.title("Trajectories of the agnets")
+        # plt.xlabel("x (m)")
+        # plt.ylabel("y (m)")
+        # plt.xlim(-5,5)
+        # plt.ylim(-2,8)
+        # plt.pause(0.001)
+        # plt.cla()
         print("{:.6f} sec simulated".format(step/SIMUL_HZ))
 
 
