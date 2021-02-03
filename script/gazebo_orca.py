@@ -36,7 +36,7 @@ ANGULAR_SPEED = 0.2
 
 # Set goal position
 GOAL_X = 0
-GOAL_Y = 10
+GOAL_Y = 5
 
 def GoEasy(direc, speed_ratio):
     if direc == 4: # Backward
@@ -85,7 +85,10 @@ print('Running simulation')
 
 pc2obs_time = 0.0
 lpp_time = 0.0
-for step in range(1000):
+dist = 10.0
+step = 1
+
+while(dist > 0.8):
     t1 = time.time()
     samples, robot_state = pc2obs.pc2obs(voxel_size = voxel_size)
     t2 = time.time()
@@ -93,7 +96,7 @@ for step in range(1000):
     if type(samples) == type(False):
         print("not connected")
         continue
-
+    dist = math.sqrt((GOAL_X - robot_state[1])**2 + (-GOAL_Y - robot_state[0])**2)
 
     sim.clearObstacle()
     obs_position_list = [[(x-size, y-size),(x+size, y-size), (x+size, y+size), (x-size, y+size)] for x,y,z in samples]
@@ -128,7 +131,7 @@ for step in range(1000):
     else:
         direc = 5 # stop
     if direc == 1:
-        diff_angle = (-robot_state[2] + math.atan2(GOAL_X - robot_state[0], GOAL_Y - robot_state[1]))
+        diff_angle = (-robot_state[2] + math.atan2(GOAL_X - robot_state[1], -GOAL_Y - robot_state[0]))
         if diff_angle > 0:
             v_ang = ANGULAR_SPEED * min(diff_angle/(math.pi/2), 1)
         else:
@@ -144,6 +147,7 @@ for step in range(1000):
     print("pc2obs took: {} sec".format(t2-t1))
     print("OCRA took: {} sec".format(t3-t2))
     print("Average took: {} sec, {} sec".format(pc2obs_time/step, lpp_time/step))
+    print("Distance to the Goal: {}".format(dist))
 
     plt.arrow(positions[0][0], positions[0][1], velocity[0][0], velocity[0][1], width=0.05)
     for obs_position in obs_position_list:
@@ -161,7 +165,7 @@ for step in range(1000):
     plt.cla()
     #print("{:.6f} sec simulated".format(step/SIMUL_HZ))
     print()
+    step = step+1
 
 easyGo.stop()
 rospy.signal_shutdown("esc")
-sys.exit(1)

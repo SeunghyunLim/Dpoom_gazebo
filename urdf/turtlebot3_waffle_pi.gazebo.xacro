@@ -144,7 +144,7 @@
   </gazebo>
 
 <!--link : https://www.raspberrypi.org/documentation/hardware/camera/-->
-  <gazebo reference="camera_rgb_frame">
+  <!-- <gazebo reference="camera_rgb_frame">
     <sensor name="camera" type="depth">
       <update_rate>20</update_rate>
       <camera>
@@ -162,8 +162,7 @@
       <plugin name="camera_plugin" filename="libgazebo_ros_openni_kinect.so">
         <baseline>0.2</baseline>
         <alwaysOn>true</alwaysOn>
-        <!-- Keep this zero, update_rate in the parent <sensor> tag
-          will control the frame rate. -->
+
         <updateRate>0.0</updateRate>
         <cameraName>camera_ir</cameraName>
         <imageTopicName>/camera/color/image_raw</imageTopicName>
@@ -186,6 +185,6 @@
         <hackBaseline>0</hackBaseline>
       </plugin>
     </sensor>
-  </gazebo>
+  </gazebo> -->
 
 </robot>
