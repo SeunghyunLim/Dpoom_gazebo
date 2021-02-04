@@ -9,6 +9,7 @@ import time
 import math
 import easyGo
 import pc2obs
+import os
 
 SIMUL_HZ = 10.0
 
@@ -88,6 +89,8 @@ lpp_time = 0.0
 dist = 10.0
 step = 1
 
+obs_flg = 0
+
 while(dist > 0.8):
     t1 = time.time()
     samples, robot_state = pc2obs.pc2obs(voxel_size = voxel_size)
@@ -97,6 +100,9 @@ while(dist > 0.8):
         print("not connected")
         continue
     dist = math.sqrt((GOAL_X - robot_state[1])**2 + (-GOAL_Y - robot_state[0])**2)
+    if obs_flg == 0 and dist < 10:
+        os.system("sh ./init.sh")
+        obs_flg = 1
 
     sim.clearObstacle()
     obs_position_list = [[(x-size, y-size),(x+size, y-size), (x+size, y+size), (x-size, y+size)] for x,y,z in samples]
