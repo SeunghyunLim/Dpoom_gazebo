@@ -24,6 +24,7 @@ from sensor_msgs.msg import Image, CompressedImage
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 import rospy
+import os
 
 import easyGo
 from std_msgs.msg import String
@@ -357,6 +358,9 @@ def main():
     ground_seg_time = 0.0
     lpp_time = 0.0
     dist = 10.0
+
+    obs_flg = 0
+
     while(dist > 0.8):
         t1 = time.time()
         global depth_image_raw, color_image_raw, robot_state
@@ -364,6 +368,9 @@ def main():
             sleep(0.1)
             continue
         dist = math.sqrt((GOAL_X - robot_state[1])**2 + (-GOAL_Y - robot_state[0])**2)
+        if obs_flg == 0 and dist < 10:
+            os.system("sh ./agents/init.sh")
+            obs_flg = 1
         depth_image, color_image = preGroundSeg(depth_image_raw, color_image_raw)
         # last step
         color_image, virtual_lane_available = GroundSeg(depth_image, color_image)
