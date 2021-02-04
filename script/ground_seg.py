@@ -369,7 +369,7 @@ def main():
             continue
         dist = math.sqrt((GOAL_X - robot_state[1])**2 + (-GOAL_Y - robot_state[0])**2)
         if obs_flg == 0 and dist < 10:
-            os.system("sh ./agents/init.sh")
+            os.system("sh ./init.sh")
             obs_flg = 1
         depth_image, color_image = preGroundSeg(depth_image_raw, color_image_raw)
         # last step
@@ -406,6 +406,7 @@ def main():
         print("MORP took: {} sec".format(t4-t3))
         print("Average took: {} sec, {} sec, numFrame {}".format(ground_seg_time/numFrame, lpp_time/numFrame, numFrame))
         print("Distance to the Goal: {}".format(dist))
+        print("flg: {}".format(obs_flg))
 
         cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
         cv2.imshow('RealSense', color_image)
