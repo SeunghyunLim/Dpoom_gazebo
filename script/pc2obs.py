@@ -106,7 +106,8 @@ def state_callback(data):
     global robot_state
     q = data.pose.pose.orientation
     yaw = euler_from_quaternion(q.x, q.y, q.z, q.w)
-    robot_state = [-data.pose.pose.position.y, data.pose.pose.position.x, -yaw]
+    yaw = yaw-math.pi/2 if yaw-math.pi/2 < math.pi else yaw+3*math.pi/2
+    robot_state = [data.pose.pose.position.x, data.pose.pose.position.y, -yaw]
 
 from rosgraph_msgs.msg import Clock
 sim_time = 0.0
