@@ -37,7 +37,7 @@ ANGULAR_SPEED = 0.2
 
 # Set goal position
 GOAL_X = 0
-GOAL_Y = 5
+GOAL_Y = 3
 
 def GoEasy(direc, speed_ratio):
     if direc == 4: # Backward
@@ -91,9 +91,13 @@ step = 1
 
 obs_flg = 0
 
+sim_time = False
+while sim_time == False:
+    samples, robot_state, sim_time = pc2obs.pc2obs(voxel_size = voxel_size)
+t1 = float(sim_time)
 while(dist > 0.8):
-    t1 = time.time()
-    samples, robot_state = pc2obs.pc2obs(voxel_size = voxel_size)
+    #t1 = time.time()
+    samples, robot_state, sim_time = pc2obs.pc2obs(voxel_size = voxel_size)
     t2 = time.time()
     # print(samples)
     if type(samples) == type(False):
@@ -150,10 +154,12 @@ while(dist > 0.8):
     pc2obs_time += t2-t1
     lpp_time += t3-t2
 
+    '''
     print("pc2obs took: {} sec".format(t2-t1))
     print("OCRA took: {} sec".format(t3-t2))
     print("Average took: {} sec, {} sec".format(pc2obs_time/step, lpp_time/step))
     print("Distance to the Goal: {}".format(dist))
+    '''
 
     plt.arrow(positions[0][0], positions[0][1], velocity[0][0], velocity[0][1], width=0.05)
     for obs_position in obs_position_list:
@@ -172,6 +178,9 @@ while(dist > 0.8):
     #print("{:.6f} sec simulated".format(step/SIMUL_HZ))
     print()
     step = step+1
+    print("NAV TIME {}".format(float(sim_time)-t1))
+    time.sleep(0.4)
+print("NAV TIME {}".format(float(sim_time)-t1))
 
 easyGo.stop()
 rospy.signal_shutdown("esc")

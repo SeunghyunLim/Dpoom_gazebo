@@ -31,6 +31,7 @@ from std_msgs.msg import String
 from cv_bridge import CvBridge, CvBridgeError
 import threading
 from time import sleep
+from rosgraph_msgs.msg import Clock
 import csv
 
 import argparse
@@ -58,11 +59,11 @@ ROW = 640
 #ROBOT MOVE
 SPEED = 15
 ROTATE_SPEED = 25
-ANGULAR_SPEED = 0.2
+ANGULAR_SPEED = 0.3
 
 # Set goal position
 GOAL_X = 0
-GOAL_Y = 5
+GOAL_Y = 3
 
 VERTICAL_CORRECTION = 0.35 # 0.15 #0.45  #parameter of correction for parabola to linear
 WARP_PARAM = 0.45  #value should be 0.0 ~ 1.0. Bigger get more warped. 0.45
@@ -77,7 +78,7 @@ fontScale = 1.5
 yellow = (0, 255, 255)
 depth_image_raw = 0
 color_image_raw = 0
-robot_state = 0
+robot_state = [0, -8, 0]
 cmd_vel = 0
 
 t = time.time()
@@ -320,6 +321,15 @@ def image_callback(data):
     global color_image_raw
     color_image_raw = bridge.compressed_imgmsg_to_cv2(data, "bgr8")
 
+sim_time = 0.0
+flg = 0
+
+def time_callback(data):
+    global sim_time
+    _sec = data.clock.secs
+    _nsec = data.clock.nsecs
+    sim_time = _sec + _nsec * 0.000000001
+
 def state_callback(data):
     global robot_state
     q = data.pose.pose.orientation
@@ -336,6 +346,7 @@ def listener():
     rospy.Subscriber("/camera/depth/image_raw", Image, depth_callback)
     rospy.Subscriber("/camera/color/image_raw/compressed", CompressedImage, image_callback)
     rospy.Subscriber("/odom", Odometry, state_callback)
+    rospy.Subscriber("/clock", Clock, time_callback)
     if args.csv:
         rospy.Subscriber("/cmd_vel", Twist, cmd_callback)
     # spin() simply keeps python from exiting until this node is stopped
@@ -360,10 +371,13 @@ def main():
     dist = 10.0
 
     obs_flg = 0
-
+    global sim_time
+    while sim_time == 0:
+        global sim_time
+    t1 = float(sim_time)
     while(dist > 0.8):
-        t1 = time.time()
-        global depth_image_raw, color_image_raw, robot_state
+        #t1 = time.time()
+        global depth_image_raw, color_image_raw, robot_state, sim_time
         if type(depth_image_raw) == type(0) or type(color_image_raw) == type(0):
             sleep(0.1)
             continue
@@ -402,14 +416,17 @@ def main():
         ground_seg_time += t2-t1
         lpp_time += t4-t3
 
+        '''
         print("ground_seg took: {} sec".format(t2-t1))
         print("MORP took: {} sec".format(t4-t3))
         print("Average took: {} sec, {} sec, numFrame {}".format(ground_seg_time/numFrame, lpp_time/numFrame, numFrame))
         print("Distance to the Goal: {}".format(dist))
         print("flg: {}".format(obs_flg))
+        '''
 
         cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
         cv2.imshow('RealSense', color_image)
+        print("NAV TIME {}".format(float(sim_time)-t1))
         #cv2.imshow('RealSense_depth', depth_image)
         if cv2.waitKey(1) == 27: #esc
             easyGo.stop()
@@ -421,6 +438,8 @@ def main():
             break
         # FPS
         numFrame += 1
+    print(sim_time, t1)
+    print("NAV TIME {}".format(float(sim_time)-t1))
     easyGo.stop()
     rospy.signal_shutdown("esc")
 
