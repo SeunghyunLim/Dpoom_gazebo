@@ -94,6 +94,14 @@ def points_callback(data):
     global points_raw
     points_raw = data
 
+from rosgraph_msgs.msg import Clock
+sim_time =0.0
+def time_callback(data):
+    global sim_time
+    _sec = data.clock.secs
+    _nsec = data.clock.nsecs
+    sim_time = _sec + _nsec * 0.000000001
+
 def image_callback(data):
     global color_image_raw
     color_image_raw = bridge.compressed_imgmsg_to_cv2(data, "bgr8")
@@ -113,6 +121,7 @@ def listener():
     #rospy.Subscriber("/camera/color/image_raw/compressed", CompressedImage, image_callback)
     # rospy.Subscriber("/gazebo/model_states", ModelStates, state_callback)
     rospy.Subscriber("/odom", Odometry, state_callback)
+    rospy.Subscriber("/clock", Clock, time_callback)
 
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
@@ -136,19 +145,19 @@ header = Header()
 header.frame_id = "map"
 
 def pc2obs(voxel_size = 0.3, plot=False, ros=True):
-    global points_raw, color_image_raw, robot_state, bridge, currentStatus, handle_easy, pub
+    global points_raw, color_image_raw, robot_state, bridge, currentStatus, handle_easy, pub, sim_time
     #print(points_raw)
     # if type(points_raw) == type(0) or type(color_image_raw) == type(0):
-    if type(points_raw) == type(0):
+    if type(points_raw) == type(0) or sim_time == 0.0:
         print("NOT CONNECTED")
         sleep(0.1)
-        return False, False
+        return False, False, False
 
     t1 = time.time()
     points = pc2.read_points(points_raw, skip_nans=True, field_names=("x", "y", "z"))
     points = np.array(list(points), dtype=np.float32)
     if len(points) == 0:
-        return False, False
+        return False, False, False
 
     t2 = time.time()
     #print("length pre-processed points: {}".format(len(points)))
@@ -214,7 +223,7 @@ def pc2obs(voxel_size = 0.3, plot=False, ros=True):
         pub_pc2.header.stamp = rospy.Time.now()
         pub.publish(pub_pc2)
 
-    return samples, robot_state
+    return samples, robot_state, sim_time
 
 if __name__ == "__main__":
     import argparse

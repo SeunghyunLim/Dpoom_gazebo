@@ -40,7 +40,7 @@ parser.add_argument('--plot', action='store_true')
 parser.add_argument('--csv', action='store_true')
 args = parser.parse_args()
 
-global depth_scale, ROW, COL
+global depth_scale, ROW, COL, sim_time
 
 if args.csv:
     CSV_NAME = "office_01"
@@ -62,7 +62,7 @@ ANGULAR_SPEED = 0.2
 
 # Set goal position
 GOAL_X = 0
-GOAL_Y = 5
+GOAL_Y = 3
 
 VERTICAL_CORRECTION = 0.35 # 0.15 #0.45  #parameter of correction for parabola to linear
 WARP_PARAM = 0.45  #value should be 0.0 ~ 1.0. Bigger get more warped. 0.45
@@ -77,7 +77,7 @@ fontScale = 1.5
 yellow = (0, 255, 255)
 depth_image_raw = 0
 color_image_raw = 0
-robot_state = 0
+robot_state = [0, -8, 0]
 cmd_vel = 0
 
 t = time.time()
@@ -316,6 +316,15 @@ def depth_callback(data):
     global depth_image_raw
     depth_image_raw = bridge.imgmsg_to_cv2(data, "32FC1")
 
+
+from rosgraph_msgs.msg import Clock
+sim_time =0.0
+def time_callback(data):
+    global sim_time
+    _sec = data.clock.secs
+    _nsec = data.clock.nsecs
+    sim_time = _sec + _nsec * 0.000000001
+
 def image_callback(data):
     global color_image_raw
     color_image_raw = bridge.compressed_imgmsg_to_cv2(data, "bgr8")
@@ -336,6 +345,7 @@ def listener():
     rospy.Subscriber("/camera/depth/image_raw", Image, depth_callback)
     rospy.Subscriber("/camera/color/image_raw/compressed", CompressedImage, image_callback)
     rospy.Subscriber("/odom", Odometry, state_callback)
+    rospy.Subscriber("/clock", Clock, time_callback)
     if args.csv:
         rospy.Subscriber("/cmd_vel", Twist, cmd_callback)
     # spin() simply keeps python from exiting until this node is stopped
@@ -343,7 +353,7 @@ def listener():
 
 def main():
     # Configure depth and color streams
-    global depth_scale, ROW, COL, GRN_ROI, bridge
+    global depth_scale, ROW, COL, GRN_ROI, bridge, sim_time
     fpsFlag = False
     numFrame = 1
     fps = 0.0
@@ -360,6 +370,9 @@ def main():
     dist = 10.0
 
     obs_flg = 0
+    while sim_time == 0.0:
+        continue
+    t0 = sim_time
 
     while(dist > 0.8):
         t1 = time.time()
@@ -407,6 +420,7 @@ def main():
         print("Average took: {} sec, {} sec, numFrame {}".format(ground_seg_time/numFrame, lpp_time/numFrame, numFrame))
         print("Distance to the Goal: {}".format(dist))
         print("flg: {}".format(obs_flg))
+        print("NAV TIME {}".format(float(sim_time) - t0))
 
         cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
         cv2.imshow('RealSense', color_image)
@@ -421,6 +435,7 @@ def main():
             break
         # FPS
         numFrame += 1
+    print("TOTAL TIME {}".format(float(sim_time) - t0))
     easyGo.stop()
     rospy.signal_shutdown("esc")
 
