@@ -31,6 +31,7 @@ from std_msgs.msg import String
 from cv_bridge import CvBridge, CvBridgeError
 import threading
 from time import sleep
+from rosgraph_msgs.msg import Clock
 import csv
 
 import argparse
@@ -58,7 +59,7 @@ ROW = 640
 #ROBOT MOVE
 SPEED = 15
 ROTATE_SPEED = 25
-ANGULAR_SPEED = 0.2
+ANGULAR_SPEED = 0.3
 
 # Set goal position
 GOAL_X = 0
@@ -329,6 +330,15 @@ def image_callback(data):
     global color_image_raw
     color_image_raw = bridge.compressed_imgmsg_to_cv2(data, "bgr8")
 
+sim_time = 0.0
+flg = 0
+
+def time_callback(data):
+    global sim_time
+    _sec = data.clock.secs
+    _nsec = data.clock.nsecs
+    sim_time = _sec + _nsec * 0.000000001
+
 def state_callback(data):
     global robot_state
     q = data.pose.pose.orientation
@@ -371,12 +381,12 @@ def main():
 
     obs_flg = 0
     while sim_time == 0.0:
-        continue
+        global sim_time
     t0 = sim_time
 
     while(dist > 0.8):
-        t1 = time.time()
-        global depth_image_raw, color_image_raw, robot_state
+        #t1 = time.time()
+        global depth_image_raw, color_image_raw, robot_state, sim_time
         if type(depth_image_raw) == type(0) or type(color_image_raw) == type(0):
             sleep(0.1)
             continue
@@ -415,6 +425,7 @@ def main():
         ground_seg_time += t2-t1
         lpp_time += t4-t3
 
+        '''
         print("ground_seg took: {} sec".format(t2-t1))
         print("MORP took: {} sec".format(t4-t3))
         print("Average took: {} sec, {} sec, numFrame {}".format(ground_seg_time/numFrame, lpp_time/numFrame, numFrame))
@@ -424,6 +435,7 @@ def main():
 
         cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
         cv2.imshow('RealSense', color_image)
+        print("NAV TIME {}".format(float(sim_time)-t1))
         #cv2.imshow('RealSense_depth', depth_image)
         if cv2.waitKey(1) == 27: #esc
             easyGo.stop()

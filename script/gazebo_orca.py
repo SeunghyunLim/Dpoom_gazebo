@@ -155,10 +155,12 @@ while(dist > 0.8):
     pc2obs_time += t2-t1
     lpp_time += t3-t2
 
+    '''
     print("pc2obs took: {} sec".format(t2-t1))
     print("OCRA took: {} sec".format(t3-t2))
     print("Average took: {} sec, {} sec".format(pc2obs_time/step, lpp_time/step))
     print("Distance to the Goal: {}".format(dist))
+    '''
 
     plt.arrow(positions[0][0], positions[0][1], velocity[0][0], velocity[0][1], width=0.05)
     for obs_position in obs_position_list:
