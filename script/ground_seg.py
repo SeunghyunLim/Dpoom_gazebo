@@ -381,12 +381,12 @@ def main():
 
     obs_flg = 0
     while sim_time == 0.0:
-        global sim_time
+        continue
     t0 = sim_time
 
     while(dist > 0.8):
         #t1 = time.time()
-        global depth_image_raw, color_image_raw, robot_state, sim_time
+        # global depth_image_raw, color_image_raw, robot_state, sim_time
         if type(depth_image_raw) == type(0) or type(color_image_raw) == type(0):
             sleep(0.1)
             continue
@@ -421,21 +421,20 @@ def main():
                 easyGo.mvCurve(SPEED, -v_ang)
             else:
                 GoEasy(direc) # FIXME
-        t4 = time.time()
-        ground_seg_time += t2-t1
-        lpp_time += t4-t3
-
-        '''
-        print("ground_seg took: {} sec".format(t2-t1))
-        print("MORP took: {} sec".format(t4-t3))
-        print("Average took: {} sec, {} sec, numFrame {}".format(ground_seg_time/numFrame, lpp_time/numFrame, numFrame))
-        print("Distance to the Goal: {}".format(dist))
-        print("flg: {}".format(obs_flg))
-        print("NAV TIME {}".format(float(sim_time) - t0))
+        # t4 = time.time()
+        # ground_seg_time += t2-t1
+        # lpp_time += t4-t3
+        #
+        # print("ground_seg took: {} sec".format(t2-t1))
+        # print("MORP took: {} sec".format(t4-t3))
+        # print("Average took: {} sec, {} sec, numFrame {}".format(ground_seg_time/numFrame, lpp_time/numFrame, numFrame))
+        # print("Distance to the Goal: {}".format(dist))
+        # print("flg: {}".format(obs_flg))
+        # print("NAV TIME {}".format(float(sim_time) - t0))
 
         cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
         cv2.imshow('RealSense', color_image)
-        print("NAV TIME {}".format(float(sim_time)-t1))
+        print("NAV TIME {}".format(float(sim_time)-t0))
         #cv2.imshow('RealSense_depth', depth_image)
         if cv2.waitKey(1) == 27: #esc
             easyGo.stop()

@@ -97,6 +97,7 @@ while type(sim_time) == type(False):
     samples, robot_state, sim_time = pc2obs.pc2obs(voxel_size = voxel_size)
 t0 = float(sim_time)
 while(dist > 0.8):
+
     t1 = time.time()
     samples, robot_state, sim_time = pc2obs.pc2obs(voxel_size = voxel_size)
     t2 = time.time()
@@ -104,7 +105,7 @@ while(dist > 0.8):
     if type(samples) == type(False):
         print("not connected")
         continue
-    dist = math.sqrt((GOAL_X - robot_state[1])**2 + (-GOAL_Y - robot_state[0])**2)
+    dist = math.sqrt((GOAL_X - robot_state[0])**2 + (GOAL_Y - robot_state[1])**2)
     if obs_flg == 0 and dist < 10:
         os.system("sh ./init.sh")
         obs_flg = 1
@@ -142,7 +143,7 @@ while(dist > 0.8):
     else:
         direc = 5 # stop
     if direc == 1:
-        diff_angle = (-robot_state[2] + math.atan2(GOAL_X - robot_state[1], -GOAL_Y - robot_state[0]))
+        diff_angle = (-robot_state[2] + math.atan2(GOAL_X - robot_state[0], GOAL_Y - robot_state[1]))
         if diff_angle > 0:
             v_ang = ANGULAR_SPEED * min(diff_angle/(math.pi/2), 1)
         else:
@@ -155,12 +156,10 @@ while(dist > 0.8):
     pc2obs_time += t2-t1
     lpp_time += t3-t2
 
-    '''
     print("pc2obs took: {} sec".format(t2-t1))
     print("OCRA took: {} sec".format(t3-t2))
     print("Average took: {} sec, {} sec".format(pc2obs_time/step, lpp_time/step))
     print("Distance to the Goal: {}".format(dist))
-    '''
 
     plt.arrow(positions[0][0], positions[0][1], velocity[0][0], velocity[0][1], width=0.05)
     for obs_position in obs_position_list:
@@ -181,6 +180,7 @@ while(dist > 0.8):
     print("iter time: {}".format(time.time() - t1))
     print("NAV TIME {}".format(float(sim_time) - t0))
     print()
+    time.sleep(0.3)
 print("TOTAL TIME {}".format(float(sim_time) - t0))
 easyGo.stop()
 rospy.signal_shutdown("esc")
