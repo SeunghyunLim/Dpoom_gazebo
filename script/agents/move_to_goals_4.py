@@ -4,20 +4,21 @@ from gazebo_msgs.msg import ModelState
 from gazebo_msgs.srv import SetModelState
 from utils import *
 
-DPoom_init = [0.0, -4.0, 0.2, 1.57]
+DPoom_init = [0.0, 3.0+4.0, 0.2, 1.57]
+#DPoom_init = [0.0, 3.0, 0.2, 1.57]
 
 init_list = ['', '', '', '', '']
 
-# init_list[0] = [-1.8, -1.0, 0.2, 0.0]
-# init_list[1] = [1.8, -1.0, 0.2, -3.14]
-# init_list[2] = [0.0, 0.0, 0.2, -1.57]
-# init_list[3] = [-1.2, -3.0, 0.2, 1.0]
-# init_list[4] = [1.2, -3.0, 0.2, 2.0]
-init_list[0] = [-1.8, 3.0, 0.2, 0.0]
-init_list[1] = [1.8, 3.0, 0.2, -3.14]
-init_list[2] = [0.0, 4.0, 0.2, -1.57]
-init_list[3] = [-1.2, 1.0, 0.2, 1.0]
-init_list[4] = [1.2, 1.0, 0.2, 2.0]
+# init_list[0] = [-0.5, -3.7, 0.2, 0.0]
+# init_list[1] = [-2.5, 0, 0.2, -3.14]
+# init_list[2] = [-2.5, -2, 0.2, -1.57]
+# init_list[3] = [2.5, -2.5, 0.2, 1.0]
+# init_list[4] = [1.5, 0.1, 0.2, 2.0]
+init_list[0] = [-0.5, -3.7+4.0, 0.2, 0.0]
+init_list[1] = [-2.5, 0+4.0, 0.2, -3.14]
+init_list[2] = [-2.5, -2+4.0, 0.2, -1.57]
+init_list[3] = [2.5, -2.5+4.0, 0.2, 1.0]
+init_list[4] = [1.5, 0.1+4.0, 0.2, 2.0]
 
 def main():
     rospy.init_node('set_pose')
