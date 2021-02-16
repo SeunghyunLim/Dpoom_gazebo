@@ -8,18 +8,16 @@ import time
 PI = 3.1415926535897
 Magic_value = 1.7375
 
-stopper = True #easyGo command ignore, False : ignore, True : pass
-
 def main():
-    #try:
-    print('EasyGo Activated')
-    #rospy.init_node('robot_easygo', anonymous=False)
-    global velocity_publisher
-    velocity_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=10)
-    imu_sub = rospy.Subscriber('imu/yaw', Imu, imu_callback)
-    enc_sub = rospy.Subscriber('cmd_vel', Twist, encoder_callback)
-    #except rospy.ROSInterruptException:
-        #pass
+    try:
+        print('EasyGo Activated')
+        #rospy.init_node('robot_easygo', anonymous=False)
+        global velocity_publisher
+        velocity_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=10)
+        imu_sub = rospy.Subscriber('imu/yaw', Imu, imu_callback)
+        enc_sub = rospy.Subscriber('cmd_vel', Twist, encoder_callback)
+    except rospy.ROSInterruptException:
+        pass
 
 
 def printv(text, verbose):
@@ -29,11 +27,7 @@ def printv(text, verbose):
             print(text)
 
 def stop(verbose=0):
-    global stopper
-    # print('easyGo::', str(stopper))
-    if stopper == False: return
     #Starts a new node
-    #rospy.init_node('robot_mvs', anonymous=True)
     velocity_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=10)
     vel_msg = Twist()
     vel_msg.linear.x=0
@@ -48,12 +42,6 @@ def stop(verbose=0):
 
 
 def mvRotate(speed, angle, clockwise, verbose=0):
-    global stopper
-    # print('easyGo::', str(stopper))
-    if stopper == False: return
-    #Starts a new node
-    #rospy.init_node('robot_mvs', anonymous=True)
-    #velocity_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=10)
     vel_msg = Twist()
 
     # Receiveing the user's input
@@ -65,7 +53,6 @@ def mvRotate(speed, angle, clockwise, verbose=0):
     relative_angle = angle*2*PI/360
 
     #We wont use linear components
-
 
     if angle==-1:
         if clockwise:
@@ -99,21 +86,11 @@ def mvRotate(speed, angle, clockwise, verbose=0):
     printv('STOP', verbose)
 
 def mvCurve(x, y, verbose=0):
-    global stopper
-    # print('easyGo::', str(stopper))
-    if stopper == False: return
-    #rospy.init_node('robot_mvs', anonymous=True)
     vel_msg = Twist()
-    angular_speed = x*2*PI/360
-    vel_msg.linear.x= angular_speed   ###??? x == Robot_speed
+    vel_msg.linear.x= x   ###??? x == Robot_speed
     vel_msg.angular.z=y
     velocity_publisher.publish(vel_msg)     ###positive -> clockwise?
 def mvStraight(speed, angle, verbose=0):
-    global stopper
-    print('easyGo::', str(stopper))
-    if stopper == False: return
-    #Starts a new node
-    #rospy.init_node('robot_mvs', anonymous=True)
     vel_msg = Twist()
     angular_speed = speed*2*PI/360
     relative_angle = angle*2*PI/360
@@ -143,42 +120,19 @@ def encoder_callback(incomming_msg):
     list_orientation = [incomming_msg.linear.x, incomming_msg.linear.y,
                           incomming_msg.linear.z]
 
-    #list_angular =  [incomming_msg.angular.x, incomming_msg.angular.y,
-                           #incomming_msg.angular.z]
-
-
     return list_orientation
 
 
 main()
 
 
-
-
 if __name__ == '__main__':
     try:
-
         speed = float(input("Input your speed (degrees/sec):"))
         angle = float(input("Type your distance (degrees):"))
         clockwise = input("Clockwise?: ") #True or false
-        # Testing our function
 
-        #rotate(speed, angle, clockwise)
-
-        #Verbose = 0 (default) Don;t print status
-        #Verbose = 1 Print Everything
         mvStraight(speed, angle, 1)
-
-        '''   Infinity Example ..........break condition DIY
-        t0 = rospy.Time.now().to_sec()
-        while True:
-            mvStraight(velocity_publisher, speed, angle, 1)
-            t1 = rospy.Time.now().to_sec()
-            if t1-t0 > 10:
-                break
-        stop()
-        '''
-
 
     except rospy.ROSInterruptException:
         pass
