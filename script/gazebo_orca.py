@@ -31,8 +31,8 @@ voxel_size = 0.3
 size = voxel_size/2
 
 #ROBOT MOVE
-SPEED = 15 # 14
-ROTATE_SPEED = 25 # 25
+SPEED = 0.26 # 0.26 (m/s)
+ROTATE_SPEED = 25 # 25 (deg/s)
 ANGULAR_SPEED = 0.2
 
 # Set goal position

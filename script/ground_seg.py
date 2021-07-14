@@ -57,9 +57,9 @@ COL= 480
 ROW = 640
 
 #ROBOT MOVE
-SPEED = 15
-ROTATE_SPEED = 25
-ANGULAR_SPEED = 0.3
+SPEED = 0.26 # 0.26 (m/s)
+ROTATE_SPEED = 25 # 25 (deg/s)
+ANGULAR_SPEED = 0.2
 
 # Set goal position
 GOAL_X = 0

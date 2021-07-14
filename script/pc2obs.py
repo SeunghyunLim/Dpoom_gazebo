@@ -188,12 +188,12 @@ def pc2obs(voxel_size = 0.3, plot=False, ros=True):
     points_layer = []
     for i, p in enumerate(points):
         # When the pointcloud has z-foward axis, the xyz-coordinate order should be [p[0], p[2], -p[1]].
-        if -p[1] > 0.1 and -p[1] < 0.6:
-            points_layer.append([p[0], p[2], -p[1]])
+        #if -p[1] > 0.1 and -p[1] < 0.6:
+        #    points_layer.append([p[0], p[2], -p[1]])
 
         # When the pointcloud has x-foward axis, the xyz-coordinate order should be [-p[1], p[0], p[2]].
-        # if p[2] > 0.1 and p[2] < 0.6:
-        #     points_layer.append([-p[1], p[0], p[2]])
+         if p[2] > 0.1 and p[2] < 0.6:
+             points_layer.append([-p[1], p[0], p[2]])
     samples = np.array(points_layer)
 
     if plot:
