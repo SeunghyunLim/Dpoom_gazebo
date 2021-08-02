@@ -48,7 +48,7 @@ if args.csv:
 
     f= open(CSV_NAME+'.csv','w')
     wr = csv.writer(f)
-    wr.writerow(["time", \
+    wr.writerow(["time", "goal_x", "goal_y",\
                 "linear_x", "angular_z", \
                 "deadends"])
 
@@ -333,11 +333,6 @@ def image_callback(data):
 sim_time = 0.0
 flg = 0
 
-def time_callback(data):
-    global sim_time
-    _sec = data.clock.secs
-    _nsec = data.clock.nsecs
-    sim_time = _sec + _nsec * 0.000000001
 
 def state_callback(data):
     global robot_state
@@ -369,10 +364,8 @@ def main():
     fps = 0.0
 
     bridge = CvBridge()
-
     realsense_listener = threading.Thread(target=listener)
     realsense_listener.start()
-
     depth_scale = 1.0
     startTime = time.time()
     ground_seg_time = 0.0
@@ -380,10 +373,11 @@ def main():
     dist = 10.0
 
     obs_flg = 0
-    while sim_time == 0.0:
-        continue
+    #while sim_time == 0.0:
+    #    continue
     t0 = sim_time
 
+    print(dist)
     while(dist > 0.8):
         #t1 = time.time()
         # global depth_image_raw, color_image_raw, robot_state, sim_time
@@ -392,7 +386,7 @@ def main():
             continue
         dist = math.sqrt((GOAL_X - robot_state[1])**2 + (-GOAL_Y - robot_state[0])**2)
         if obs_flg == 0 and dist < 10:
-            os.system("sh ./init.sh")
+            # os.system("sh ./init.sh")
             obs_flg = 1
         depth_image, color_image = preGroundSeg(depth_image_raw, color_image_raw)
         # last step
@@ -405,8 +399,11 @@ def main():
             virtual_lane_available = np.array(virtual_lane_available)
             # virtual_lane_available = UNAVAILABLE_THRES - virtual_lane_available # normalize. 0 means top of the image
             virtual_lane_available = COL - virtual_lane_available
-            temp = [(time.time()-t), cmd_vel.linear.x, cmd_vel.angular.z]
+            print(robot_state[1], robot_state[0])
+            print((GOAL_X - robot_state[1]), (GOAL_Y + robot_state[0]))
+            temp = [(time.time()-t), (GOAL_X - robot_state[1]), (GOAL_Y + robot_state[0]), cmd_vel.linear.x, cmd_vel.angular.z]
             temp.extend([x for x in virtual_lane_available])
+
             wr.writerow(temp)
 
         t3 = time.time()
@@ -452,6 +449,7 @@ def main():
 
 if __name__ == "__main__":
     rospy.init_node('robot_mvs', anonymous=False)
+    
     main()
     if args.csv:
         f.close()

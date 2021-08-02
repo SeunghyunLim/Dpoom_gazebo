@@ -77,12 +77,12 @@ def callback(data):
     control_speed = (data.axes[5] + 1) / 2 # Right trigger
     control_speed_back = (data.axes[2] + 1) / 2 # Left trigger
     #control_steer = - data.axes[3] # Right stick
-    control_steer = data.axes[0] # Left stick
+    control_steer = - data.axes[0] # Left stick
 
     control_brake = data.buttons[5] # Right Button RB
 
-    if abs(control_steer) < 0.15:  # give a threshold due to the poor joystick
-        control_steer = 0
+    #if abs(control_steer) < 0.15:  # give a threshold due to the poor joystick
+    #    control_steer = 0
 
     if control_speed_back:
         control_speed = - control_speed_back
@@ -98,6 +98,10 @@ def callback(data):
     
     if control_brake:
         easyGo.stop()
+    else:
+        easyGo.mvCurve(control_speed, control_steer)
+
+    '''
     elif control_speed != 0:
         easyGo.mvStraight(control_speed, -1)
     elif control_steer > 0:
@@ -106,7 +110,7 @@ def callback(data):
         easyGo.mvRotate(-control_steer, -1, False)
     else:
         easyGo.stop()
-
+    '''
 
     print("speed: ", control_speed, " , brake: ", control_brake, ", steer: ", control_steer)
 

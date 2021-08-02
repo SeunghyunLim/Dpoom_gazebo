@@ -13,9 +13,9 @@ def main():
         print('EasyGo Activated')
         #rospy.init_node('robot_easygo', anonymous=False)
         global velocity_publisher
-        velocity_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=10)
-        imu_sub = rospy.Subscriber('imu/yaw', Imu, imu_callback)
-        enc_sub = rospy.Subscriber('cmd_vel', Twist, encoder_callback)
+        velocity_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=1)
+        #imu_sub = rospy.Subscriber('imu/yaw', Imu, imu_callback)
+        #enc_sub = rospy.Subscriber('cmd_vel', Twist, encoder_callback)
     except rospy.ROSInterruptException:
         pass
 
@@ -28,7 +28,7 @@ def printv(text, verbose):
 
 def stop(verbose=0):
     #Starts a new node
-    velocity_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=10)
+    #velocity_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=10)
     vel_msg = Twist()
     vel_msg.linear.x=0
     vel_msg.linear.y=0
@@ -87,8 +87,8 @@ def mvRotate(speed, angle, clockwise, verbose=0):
 
 def mvCurve(x, y, verbose=0):
     vel_msg = Twist()
-    vel_msg.linear.x= x   ###??? x == Robot_speed
-    vel_msg.angular.z=y
+    vel_msg.linear.x= x*2*PI/360   ###??? x == Robot_speed
+    vel_msg.angular.z=y*2*PI/360
     velocity_publisher.publish(vel_msg)     ###positive -> clockwise?
 def mvStraight(speed, angle, verbose=0):
     vel_msg = Twist()
