@@ -5,6 +5,7 @@ import sys
 import os
 import math
 import time
+import matplotlib.pyplot as plt
 from std_msgs.msg import Float32
 from sensor_msgs.msg import Joy
 from sensor_msgs.msg import Image, CompressedImage
@@ -21,10 +22,14 @@ import easyGo
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
 from time import sleep
+import numpy as np
 
 MODEL_NAME = 'history_10'
 parser = argparse.ArgumentParser()
 parser.add_argument('--keyboard', action='store_true')
+parser.add_argument('--control', action='store_true')
+parser.add_argument('--plot', action='store_true')
+parser.add_argument('--csv', action='store_true')
 args = parser.parse_args()
 
 totalTime = 0
@@ -37,9 +42,41 @@ csv_flag = False
 DRIVE_INDEX = -1  # last drive index
 device = 'cpu'
 
+COL= 480
+ROW = 640
+
+def imgmsg_to_cv2(img_msg):
+    #if img_msg.encoding != "bgr8":
+    #    rospy.logerr("This Coral detect node has been hardcoded to the 'bgr8' encoding.  Come change the code if you're actually trying to implement a new camera")
+    dtype = np.dtype("uint8") # Hardcode to 8 bits...
+    #dtype = dtype.newbyteorder('>' if img_msg.is_bigendian else '<')
+    #image_opencv = np.ndarray(shape=(COL, ROW, 3), # and three channels of data. Since OpenCV works with bgr natively, we don't need to reorder the channels.
+    #                dtype=dtype, buffer=img_msg.data)
+    # If the byt order is different between the message and the system.
+    #if img_msg.is_bigendian == (sys.byteorder == 'little'):
+    #    image_opencv = image_opencv.byteswap().newbyteorder()
+
+    image_opencv = np.zeros((COL, ROW, 3), dtype='uint8')
+    return image_opencv
+
+def depthmsg_to_cv2(img_msg):
+    #if img_msg.encoding != "32fc1":
+    #    rospy.logerr("This Coral detect node has been hardcoded to the 'bgr8' encoding.  Come change the code if you're actually trying to implement a new camera")
+    dtype = np.dtype("float32") # Hardcode to 8 bits...
+    #dtype = dtype.newbyteorder('>' if img_msg.is_bigendian else '<')
+    image_opencv = np.ndarray(shape=(img_msg.height, img_msg.width, 1), # and three channels of data. Since OpenCV works with bgr natively, we don't need to reorder the channels.
+                    dtype=dtype, buffer=img_msg.data)
+    # If the byt order is different between the message and the system.
+    #if img_msg.is_bigendian == (sys.byteorder == 'little'):
+    #    image_opencv = image_opencv.byteswap().newbyteorder()
+    return image_opencv
+
+
 def depth_callback(data):
     global depth_image_raw
-    depth_image_raw = bridge.imgmsg_to_cv2(data, "32FC1")
+    # depth_image_raw = bridge.imgmsg_to_cv2(data, "32FC1")
+    depth_image_raw =depthmsg_to_cv2(data)
+
 
 
 from rosgraph_msgs.msg import Clock
@@ -52,7 +89,8 @@ def time_callback(data):
 
 def image_callback(data):
     global color_image_raw
-    color_image_raw = bridge.compressed_imgmsg_to_cv2(data, "bgr8")
+    # color_image_raw = bridge.compressed_imgmsg_to_cv2(data, "bgr8")
+    color_image_raw = imgmsg_to_cv2(data)
 
 sim_time = 0.0
 flg = 0
@@ -273,20 +311,18 @@ def verticalGround(depth_image2, images, numCol, plot):
         #print(abs_x[ground_center_idx[0]], abs_y[ground_center_idx[0]])
         #print(abs_x[ground_center_idx[-1]], abs_y[ground_center_idx[-1]])
         #print((abs_x[ground_center_idx[-1]]-abs_x[ground_center_idx[0]])/(abs_y[ground_center_idx[-1]]-abs_y[ground_center_idx[0]]))
-        try:
             # print(ground_center_idx[0])
-            plt.plot(abs_x, abs_y)
-            plt.scatter(abs_x[ground_center_idx[0]], abs_y[ground_center_idx[0]], color='r',
-                        s=20)  # red point on start point of ground
-            plt.scatter(abs_x[ground_center_idx[-1]], abs_y[ground_center_idx[-1]], color='r', s=20)
-            plt.xlim(0, 4)  #5
-            plt.ylim(-2, 2)
+        plt.plot(abs_x, abs_y)
+        plt.scatter(abs_x[ground_center_idx[0]], abs_y[ground_center_idx[0]], color='r',
+                    s=20)  # red point on start point of ground
+        plt.scatter(abs_x[ground_center_idx[-1]], abs_y[ground_center_idx[-1]], color='r', s=20)
+        plt.xlim(0, 10)  #5
+        plt.ylim(-2, 2)
 
-            plt.pause(0.05)
-            plt.cla()
-            plt.clf()
-        except:
-            pass
+        plt.pause(0.05)
+        plt.cla()
+        plt.clf()
+        #print("error")
 
     if ground_center_idx[-1] > UNAVAILABLE_THRES:
         #dead_end = COL
@@ -303,6 +339,7 @@ def verticalGround(depth_image2, images, numCol, plot):
         cv2.circle(images, (numLine, ground_center_idx[0]), 5, (255, 255, 255), 10)
         cv2.putText(images, str(round(abs_x[ground_center_idx[0]],2)) + "m", (numLine, COL - 100), font, fontScale, yellow, 2)
     except:
+        print("error2")
         pass
 
     return images, dead_end
@@ -371,7 +408,9 @@ def main():
 
     model.eval()
     control_speed = 0
-    control_speed = 0
+    control_steer = 0
+
+    PI = 3.1415926535897
 
     while(dist > 0.8):
         #t1 = time.time()
@@ -395,12 +434,12 @@ def main():
         virtual_lane_available = np.array(virtual_lane_available)
         # virtual_lane_available = UNAVAILABLE_THRES - virtual_lane_available # normalize. 0 means top of the image
         virtual_lane_available = COL - virtual_lane_available
-        temp = [(time.time()-t), (GOAL_X - robot_state[1]), (GOAL_Y + robot_state[0]), action_speed, action_steer]
+        temp = [(time.time()-t), (GOAL_X - robot_state[1]), (GOAL_Y + robot_state[0]), control_speed, control_steer]
         temp.extend([x for x in virtual_lane_available])
 
-        if history_data == None:
+        if history_data == []:
             history_data = np.array(temp).reshape((1,-1))
-            history_data = np.repeat(x, HISTORY, axis=0)
+            history_data = np.repeat(history_data, HISTORY, axis=0)
         else:
             history_data = np.roll(history_data, -1, axis=0) # data in the front is oldest
             history_data[-1] = np.array(temp)
@@ -426,11 +465,13 @@ def main():
         control_speed = model_command[0]
         control_steer = model_command[1]
 
-        easyGo.mvCurve(control_speed, control_steer)
+        print(control_speed, control_steer)
+
+        easyGo.mvCurve(control_speed/(2*PI/360), control_steer/(2*PI/360))
 
         cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
         cv2.imshow('RealSense', color_image)
-        print("NAV TIME {}".format(float(sim_time)-t0))
+        #print("NAV TIME {}".format(float(sim_time)-t0))
         #cv2.imshow('RealSense_depth', depth_image)
         if cv2.waitKey(1) == 27: #esc
             easyGo.stop()

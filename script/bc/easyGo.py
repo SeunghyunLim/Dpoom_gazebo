@@ -90,6 +90,7 @@ def mvCurve(x, y, verbose=0):
     vel_msg.linear.x= x*2*PI/360   ###??? x == Robot_speed
     vel_msg.angular.z=y*2*PI/360
     velocity_publisher.publish(vel_msg)     ###positive -> clockwise?
+    
 def mvStraight(speed, angle, verbose=0):
     vel_msg = Twist()
     angular_speed = speed*2*PI/360
