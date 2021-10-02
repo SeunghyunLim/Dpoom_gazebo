@@ -14,11 +14,11 @@ import requests
 from time import sleep
 from os import listdir
 from os.path import isfile, join
-import wandb
+#import wandb
 
 
-HISTORY = 10
-EARLY_STOPPING = 100
+HISTORY = 5
+EARLY_STOPPING = 50
 
 seed = 42
 torch.manual_seed(seed)
@@ -33,7 +33,7 @@ parser.add_argument('--lr', type=float, default=0.00001,
 parser.add_argument('--batch', type=int, default=32, help='batch_size')
 parser.add_argument('--name', type=str, default='temp',
                     help='checkpoint file name')
-parser.add_argument('--epoch', type=int, default=10, help='number of epoch')
+parser.add_argument('--epoch', type=int, default=1000, help='number of epoch')
 parser.add_argument('--workers', type=int, default=1,
                     help='number of parallel data load workers')
 parser.add_argument('--resume', '-r', action='store_true',
@@ -42,13 +42,13 @@ parser.add_argument('--validation', action='store_true', help='valiation only')
 # parser.add_argument('--test', '-t', action='calculate RMSE', help='RMSE values')
 args = parser.parse_args()
 
-wandb.init()
-wandb.config.update(args)
+#wandb.init()
+#wandb.config.update(args)
 
 resume = False
 validation = False
 
-skip_data_front = 50 # about 2 secs
+skip_data_front = 10 # 
 
 def csv2list(filename):
     raw_data = []
@@ -73,8 +73,9 @@ def make_history_data(split_data):
             history_data = np.array(history_data)
             goal_x = history_data[:, 1]
             goal_y = history_data[:, 2]
+            yaw = history_data[:, 5]
 
-            deadends = history_data[:, 5:] / 360.0
+            deadends = history_data[:, 6:] / 360.0
 
             commands = history_data[:, 3:5]
 
@@ -82,11 +83,13 @@ def make_history_data(split_data):
             commands = np.hstack(commands)
             goal_x = np.hstack(goal_x)
             goal_y = np.hstack(goal_y)
+            yaw = np.hstack(yaw)
 
             split_history_data = list(dead_ends)
             split_history_data.extend(list(commands))
             split_history_data.extend(list(goal_x))
             split_history_data.extend(list(goal_y))
+            split_history_data.extend(list(yaw))
             #print(split_history_data)
             answer = data[i+1][[3, 4]]  # multiple indexing
 
@@ -171,7 +174,7 @@ device = 'cpu'
 best_error = 100
 start_epoch = 0
 
-
+ 
 class SimpleNet(torch.nn.Module):
 
     def __init__(self, in_features, out_features, hidden_features):
@@ -195,7 +198,6 @@ class SimpleNet(torch.nn.Module):
         self.act = nn.ReLU()
 
     def forward(self, x):
-        prev_x = x.clone().detach()  # save previous state
         x = self.act(self.lin1(x))
         x = self.act(self.lin2(x))
         x = self.act(self.lin3(x))
@@ -207,13 +209,13 @@ class SimpleNet(torch.nn.Module):
         return x
 
 n_deadends = 7
-n_goal = 2
+n_state = 3
 n_command = 2
 
-input_size = HISTORY*(n_deadends+n_command+n_goal)
+input_size = HISTORY*(n_deadends+n_command+n_state)
 model = SimpleNet(input_size, n_command, input_size)
 model = model.to(device)  # kaiming init
-wandb.watch(model)
+#wandb.watch(model)
 
 if device == 'cuda':
     model = nn.DataParallel(model)
@@ -304,12 +306,13 @@ def test(epoch, val=True):
         print('vx Max Err : {}'.format(max_vx_err))
         print('vz Max Err : {}'.format(max_vz_err))
 
-        
+        '''
         wandb.log({"Test Loss": err,
                    "vx RMSE": rmse_vx,
                    "vz RMSE": rmse_vz,
                    "vx Max Err": max_vx_err,
                    "vz Max Err": max_vz_err})
+        '''
         
 
         if err < best_error:
@@ -410,24 +413,24 @@ response = requests.post(TARGET_URL, headers={'Authorization': 'Bearer ' + TOKEN
                             data={'message': broadcast_msg})
 '''
 
-TARGET_URL = 'https://notify-api.line.me/api/notify'
-TOKEN = 'o3NVij6VHZd2Q3ULHXUiGYcgQqBrQot0T5414J6s2Ql'
+# TARGET_URL = 'https://notify-api.line.me/api/notify'
+# TOKEN = 'o3NVij6VHZd2Q3ULHXUiGYcgQqBrQot0T5414J6s2Ql'
 
-if not validation:
-    from graph import plot
-    plot.save_graph_to_image(args.name, ylim=0.1)
-    with open('graph/'+args.name+'.png', 'rb') as file:
-        # 요청합니다.
-        response = requests.post(
-            TARGET_URL,
-            headers={
-                'Authorization': 'Bearer ' + TOKEN
-            },
-            data={
-                'message': broadcast_msg,
-            },
-            files={
-                'imageFile': file
-            }
-        )
-    print("Notifying to your iphone complete, sir")
+# if not validation:
+#     from graph import plot
+#     plot.save_graph_to_image(args.name, ylim=0.1)
+#     with open('graph/'+args.name+'.png', 'rb') as file:
+#         # 요청합니다.
+#         response = requests.post(
+#             TARGET_URL,
+#             headers={
+#                 'Authorization': 'Bearer ' + TOKEN
+#             },
+#             data={
+#                 'message': broadcast_msg,
+#             },
+#             files={
+#                 'imageFile': file
+#             }
+#         )
+#     print("Notifying to your iphone complete, sir")

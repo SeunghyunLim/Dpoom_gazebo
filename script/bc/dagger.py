@@ -6,6 +6,8 @@ import os
 import math
 import time
 import matplotlib.pyplot as plt
+from os import listdir
+from os.path import isfile, join
 from std_msgs.msg import Float32
 from sensor_msgs.msg import Joy
 from sensor_msgs.msg import Image, CompressedImage
@@ -20,13 +22,22 @@ from torch.utils.data import DataLoader
 import torch.optim as optim
 import easyGo
 import cv2
+import csv
 from cv_bridge import CvBridge, CvBridgeError
 from time import sleep
 import numpy as np
 
-MODEL_NAME = 'dagger__2'
+MODEL_NAME = 'h_10'
 HISTORY = 10
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(description='arguments')
+parser.add_argument('--lr', type=float, default=0.0001,
+                    help='learning rate')
+parser.add_argument('--batch', type=int, default=32, help='batch_size')
+parser.add_argument('--name', type=str, default='dagger__',
+                    help='checkpoint file name')
+parser.add_argument('--epoch', type=int, default=5, help='number of epoch')
+parser.add_argument('--workers', type=int, default=1,
+                    help='number of parallel data load workers')
 parser.add_argument('--keyboard', action='store_true')
 parser.add_argument('--control', action='store_true')
 parser.add_argument('--plot', action='store_true')
@@ -41,10 +52,14 @@ MAX_STEER = 25
 
 csv_flag = False
 DRIVE_INDEX = -1  # last drive index
-device = 'cpu'
 
 COL= 480
 ROW = 640
+
+seed = 42
+torch.manual_seed(seed)
+np.random.seed(seed)
+
 
 def imgmsg_to_cv2(img_msg):
     #if img_msg.encoding != "bgr8":
@@ -97,6 +112,24 @@ sim_time = 0.0
 flg = 0
 
 
+def joystick_callback(data):
+    global joystick
+    control_speed = (data.axes[5] + 1) / 2 # Right trigger
+    control_speed_back = (data.axes[2] + 1) / 2 # Left trigger
+    #control_steer = - data.axes[3] # Right stick
+    control_steer = - data.axes[0] # Left stick
+
+    if control_speed_back:
+        control_speed = - control_speed_back
+
+    control_speed *= MAX_SPEED
+    control_steer *= MAX_STEER
+
+    control_steer = (int)(round(control_steer))
+    control_speed = (int)(round(control_speed))
+    
+    joystick = [control_speed, control_steer]
+
 def state_callback(data):
     global robot_state
     q = data.pose.pose.orientation
@@ -115,6 +148,7 @@ def listener():
     rospy.Subscriber("/odom", Odometry, state_callback)
     rospy.Subscriber("/clock", Clock, time_callback)
     rospy.Subscriber("/cmd_vel", Twist, cmd_callback)
+    rospy.Subscriber("joy", Joy, joystick_callback, queue_size=1)
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
 
@@ -152,30 +186,6 @@ class SimpleNet(torch.nn.Module):
         # return x
         return x
 
-n_deadends = 7
-n_state = 3
-n_command = 2
-
-input_size = HISTORY*(n_deadends+n_command+n_state)
-model = SimpleNet(input_size, n_command, input_size)
-model = model.to(device)  # kaiming init
-#wandb.watch(model)
-
-if device == 'cuda':
-    model = nn.DataParallel(model)
-    torch.backends.cudnn.benchmark = True
-print('Am I using CPU or GPU : {}'.format(device))
-
-print('==> Resuming from checkpoint')
-assert os.path.isdir('checkpoint'), 'Error: no checkpoint dir found'
-checkpoint = torch.load('./checkpoint/' + MODEL_NAME + '.pth')
-model.load_state_dict(checkpoint['model'])
-best_error = checkpoint['error']
-start_epoch = checkpoint['epoch']
-
-optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
-criterion = nn.MSELoss()
-
 #size of images
 COL= 480
 ROW = 640
@@ -204,6 +214,7 @@ depth_image_raw = 0
 color_image_raw = 0
 robot_state = [0, -8, 0]
 cmd_vel = 0
+joystick = [0.0, 0.0]
 
 t = time.time()
 
@@ -382,7 +393,7 @@ def bool_straight(virtual_lane_available, unavailable_thres):
     return True
 
 
-def main():
+def sample_trajectory(model, beta=0.75):
     # Configure depth and color streams
     global depth_scale, ROW, COL, GRN_ROI, bridge, sim_time
     fpsFlag = False
@@ -403,7 +414,6 @@ def main():
     #    continue
     t0 = sim_time
 
-    print(dist)
     history_data = []
 
     model.eval()
@@ -412,9 +422,13 @@ def main():
 
     PI = 3.1415926535897
 
+    collected_data_x = []
+    collected_data_y = []
+
     while(dist > 0.8):
         #t1 = time.time()
         # global depth_image_raw, color_image_raw, robot_state, sim_time
+        global joystick, depth_image_raw, color_image_raw
         if type(depth_image_raw) == type(0) or type(color_image_raw) == type(0):
             sleep(0.1)
             continue
@@ -446,8 +460,9 @@ def main():
 
         goal_x = history_data[:, 1]
         goal_y = history_data[:, 2]
+        yaw = history_data[:, 5]
 
-        deadends = history_data[:, 5:] / 360.0
+        deadends = history_data[:, 6:] / 360.0
 
         commands = history_data[:, 3:5]
 
@@ -455,31 +470,38 @@ def main():
         commands = np.hstack(commands)
         goal_x = np.hstack(goal_x)
         goal_y = np.hstack(goal_y)
+        yaw = np.hstack(yaw)
 
         model_input = list(dead_ends)
         model_input.extend(list(commands))
         model_input.extend(list(goal_x))
         model_input.extend(list(goal_y))
+        model_input.extend(list(yaw))
 
         with torch.no_grad():
             model_command = model(torch.FloatTensor(model_input))
 
+        # aggregate dataset
+        if -robot_state[0] > -8.0:
+            print("append data", [joystick[0]*(2*PI/360), joystick[1]*(2*PI/360)])
+            collected_data_x.append(model_input)
+            collected_data_y.append([joystick[0]*(2*PI/360), joystick[1]*(2*PI/360)])
+
         model_command = np.array(model_command)
-        control_speed = model_command[0]
-        control_steer = model_command[1]
 
+        control_speed = (1-beta)*model_command[0] + beta*joystick[0]*(2*PI/360)
+        control_steer = (1-beta)*model_command[1] + beta*joystick[1]*(2*PI/360)
         print(control_speed, control_steer)
+        #print("="*20)
 
-        if numFrame < 15:
-            easyGo.mvCurve(0.26/(2*PI/360), 0.0/(2*PI/360))
-        else:
-            easyGo.mvCurve(control_speed/(2*PI/360), control_steer/(2*PI/360))
+        easyGo.mvCurve(control_speed/(2*PI/360), control_steer/(2*PI/360))
 
         cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
         cv2.imshow('RealSense', color_image)
         #print("NAV TIME {}".format(float(sim_time)-t0))
         #cv2.imshow('RealSense_depth', depth_image)
         if cv2.waitKey(1) == 27: #esc
+            easyGo.mvCurve(0.0, 0.0)
             easyGo.stop()
             cv2.destroyAllWindows()
             rospy.signal_shutdown("esc")
@@ -491,12 +513,178 @@ def main():
         numFrame += 1
     print("TOTAL TIME {}".format(float(sim_time) - t0))
     easyGo.stop()
-    rospy.signal_shutdown("esc")
+    #rospy.signal_shutdown("esc")
+
+    return collected_data_x, collected_data_y
+
+
+skip_data_front = 10 # 
+
+def csv2list(filename):
+    raw_data = []
+    with open(filename, newline='') as csvfile:
+        spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
+
+        for i, row in enumerate(spamreader):
+            raw_data.append(row)
+
+    return np.array(raw_data[1+skip_data_front:], dtype='float32')
+
+def make_history_data(split_data):
+    # [deadends_1, deadends_2, ..., goal_y_H] (H history)
+    total_history_data = []
+    total_answer = []
+    split_data = np.array(split_data)
+    for data in split_data:
+        for i in range(HISTORY-1, len(data)-HISTORY):  # last data only used for answer
+
+            history_data = data[i-HISTORY+1:i+1]
+
+            history_data = np.array(history_data)
+            goal_x = history_data[:, 1]
+            goal_y = history_data[:, 2]
+            yaw = history_data[:, 5]
+
+            deadends = history_data[:, 6:] / 360.0
+
+            commands = history_data[:, 3:5]
+
+            dead_ends = np.hstack(deadends)
+            commands = np.hstack(commands)
+            goal_x = np.hstack(goal_x)
+            goal_y = np.hstack(goal_y)
+            yaw = np.hstack(yaw)
+
+            split_history_data = list(dead_ends)
+            split_history_data.extend(list(commands))
+            split_history_data.extend(list(goal_x))
+            split_history_data.extend(list(goal_y))
+            split_history_data.extend(list(yaw))
+            #print(split_history_data)
+            answer = data[i+1][[3, 4]]  # multiple indexing
+
+            total_history_data.append(split_history_data)
+            total_answer.append(list(answer))
+
+    return total_history_data, total_answer
+
+
+
+class CustomDataset(Dataset):
+    def __init__(self, x, y):
+        self.x_data = x
+        self.y_data = y
+
+    def __len__(self):
+        return len(self.x_data)
+
+    def __getitem__(self, item):
+        x_ = torch.FloatTensor(self.x_data[item])
+        y_ = torch.FloatTensor(self.y_data[item])
+        return x_, y_
+
+                          
+def train(model, epoch, train_loader):
+    # print('Training {} batches, {} data'.format(len(train_loader), len(train_loader)*args.batch))
+    model.train()
+
+    for i in range(epoch):
+        train_loss = torch.FloatTensor([0])
+        for batch_idx, samples in enumerate(train_loader):
+            x_train, y_train = samples
+            x_train, y_train = x_train.to(device), y_train.to(device)
+            prediction = model(x_train)
+            loss = criterion(prediction, y_train)
+            optimizer.zero_grad(set_to_none=True)  # efficient zero out
+            loss.backward()
+            optimizer.step()
+
+            train_loss += loss
+
+        # scheduler.step()
+        err = math.sqrt(float(train_loss.item() / float(len(train_loader))))
+        print('Training ==> Epoch {:2d} / {} Cost: {:.6f}'.format(i, args.epoch,
+                                                                err))
+    print("Training Finish !")
+    return model, err
+
+device = 'cpu'
+
+# load pretrained model
+
+n_deadends = 7
+n_state = 3
+n_command = 2
+
+input_size = HISTORY*(n_deadends+n_command+n_state)
+model = SimpleNet(input_size, n_command, input_size)
+model = model.to(device)  # kaiming init
+#wandb.watch(model)
+
+if device == 'cuda':
+    model = nn.DataParallel(model)
+    torch.backends.cudnn.benchmark = True
+print('Am I using CPU or GPU : {}'.format(device))
+
+print('==> Resuming from checkpoint')
+assert os.path.isdir('checkpoint'), 'Error: no checkpoint dir found'
+checkpoint = torch.load('./checkpoint/' + MODEL_NAME + '.pth')
+model.load_state_dict(checkpoint['model'])
+best_error = checkpoint['error']
+start_epoch = checkpoint['epoch']
+
+optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+criterion = nn.MSELoss()
+
+def dagger():
+    global model
+    # load dataset
+    train_dataX = []
+    train_dataY = []
+    data_folder = 'experts_data/'
+    files = [f for f in listdir(data_folder) if isfile(join(data_folder, f))]
+    print("dataset files list (total ", len(files), " files ): ", files)
+
+    split_data = []
+    for filename in files:
+        split_data.append(csv2list(data_folder+filename))
+    x, y = make_history_data(split_data)
+    train_dataX.extend(x)
+    train_dataY.extend(y)
+
+    # DAgger
+    beta = 0.25
+    episode_length = 5
+    for i in range(episode_length):
+        x, y = sample_trajectory(model, beta)
+        train_dataX.extend(x)
+        train_dataY.extend(y)
+        train_dataset = CustomDataset(train_dataX, train_dataY)
+        train_loader = DataLoader(train_dataset, batch_size=args.batch, shuffle=True,
+                            num_workers=args.workers, pin_memory=True)  # shuffle every epoch
+
+        model, err = train(model, args.epoch, train_loader)
+        state = {
+                'model': model.state_dict(),
+                'error': err,
+                'epoch': i,
+        }
+        if not os.path.isdir('checkpoint'):
+            os.mkdir('checkpoint')
+        torch.save(state, './checkpoint/' + args.name + str(i) + '.pth')
+
+        print("Ready for next run ? (Press Anything)")
+        input()
+    
 
 if __name__ == "__main__":
     rospy.init_node('robot_mvs', anonymous=False)
     
-    main()
+    dagger()
+    easyGo.mvCurve(0.0, 0.0)
+    easyGo.stop()
+    cv2.destroyAllWindows()
+    rospy.signal_shutdown("esc")
     if args.csv:
         f.close()
-    exit()
+    sys.exit(1)
