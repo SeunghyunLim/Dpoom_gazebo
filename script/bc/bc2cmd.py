@@ -444,8 +444,8 @@ def main():
             history_data = np.roll(history_data, -1, axis=0) # data in the front is oldest
             history_data[-1] = np.array(temp)
 
-        goal_x = history_data[-1][1]
-        goal_y = history_data[-1][2]
+        goal_x = history_data[:, 1]
+        goal_y = history_data[:, 2]
 
         deadends = history_data[:, 5:] / 360.0
 
@@ -456,7 +456,8 @@ def main():
 
         model_input = list(dead_ends)
         model_input.extend(list(commands))
-        model_input.extend([goal_x, goal_y])
+        model_input.extend(list(goal_x))
+        model_input.extend(list(goal_y))
 
         with torch.no_grad():
             model_command = model(torch.FloatTensor(model_input))

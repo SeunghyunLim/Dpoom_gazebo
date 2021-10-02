@@ -12,7 +12,9 @@ import torch.optim as optim
 import argparse
 import requests
 from time import sleep
-#import wandb
+from os import listdir
+from os.path import isfile, join
+import wandb
 
 
 HISTORY = 10
@@ -28,14 +30,10 @@ parser.add_argument('--ratio', type=float, default=0.7,
                     help='ratio for splitting dataset')
 parser.add_argument('--lr', type=float, default=0.00001,
                     help='learning rate')
-parser.add_argument('--min_lr', type=float, default=0.0001,
-                    help='learning rate')
-parser.add_argument('--max_lr', type=float, default=0.0001,
-                    help='learning rate')
 parser.add_argument('--batch', type=int, default=32, help='batch_size')
 parser.add_argument('--name', type=str, default='temp',
                     help='checkpoint file name')
-parser.add_argument('--epoch', type=int, default=1000, help='number of epoch')
+parser.add_argument('--epoch', type=int, default=10, help='number of epoch')
 parser.add_argument('--workers', type=int, default=1,
                     help='number of parallel data load workers')
 parser.add_argument('--resume', '-r', action='store_true',
@@ -44,69 +42,71 @@ parser.add_argument('--validation', action='store_true', help='valiation only')
 # parser.add_argument('--test', '-t', action='calculate RMSE', help='RMSE values')
 args = parser.parse_args()
 
-#wandb.init()
-#wandb.config.update(args)
+wandb.init()
+wandb.config.update(args)
 
 resume = False
 validation = False
 
+skip_data_front = 50 # about 2 secs
 
 def csv2list(filename):
     raw_data = []
     with open(filename, newline='') as csvfile:
         spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
 
-        # 10 Hz dynamics
         for i, row in enumerate(spamreader):
-            if i % 2 == 0:
-                raw_data.append(row)
+            raw_data.append(row)
 
-    return raw_data[1:]
+    return np.array(raw_data[1+skip_data_front:], dtype='float32')
 
 def make_history_data(split_data):
-    # [vx1, vx2, vx3, vx4, vy1 .... d_vx4]
+    # [deadends_1, deadends_2, ..., goal_y_H] (H history)
     total_history_data = []
     total_answer = []
-    data = np.array(split_data, dtype='float32')
-    for i in range(HISTORY-1, len(data)-HISTORY):  # last data only used for answer
-        # history_data = []
-        # if i < HISTORY-1:
-        #     for j in range(i):
-        #         history_data.append(data[0])
-        #     for j in range(HISTORY-i):
-        #         history_data.append(data[j+1])
-        # else:
-        history_data = data[i-HISTORY+1:i+1]
+    split_data = np.array(split_data)
+    for data in split_data:
+        for i in range(HISTORY-1, len(data)-HISTORY):  # last data only used for answer
 
-        history_data = np.array(history_data)
-        goal_x = data[i][1]
-        goal_y = data[i][2]
+            history_data = data[i-HISTORY+1:i+1]
 
-        deadends = history_data[:, 5:] / 360.0
+            history_data = np.array(history_data)
+            goal_x = history_data[:, 1]
+            goal_y = history_data[:, 2]
 
-        commands = history_data[:, 3:5]
+            deadends = history_data[:, 5:] / 360.0
 
-        dead_ends = np.hstack(deadends)
-        commands = np.hstack(commands)
+            commands = history_data[:, 3:5]
 
-        split_history_data = list(dead_ends)
-        split_history_data.extend(list(commands))
-        split_history_data.extend([goal_x, goal_y])
-        #print(split_history_data)
-        answer = data[i+1][[3, 4]]  # multiple indexing
+            dead_ends = np.hstack(deadends)
+            commands = np.hstack(commands)
+            goal_x = np.hstack(goal_x)
+            goal_y = np.hstack(goal_y)
 
-        total_history_data.append(split_history_data)
-        total_answer.append(list(answer))
+            split_history_data = list(dead_ends)
+            split_history_data.extend(list(commands))
+            split_history_data.extend(list(goal_x))
+            split_history_data.extend(list(goal_y))
+            #print(split_history_data)
+            answer = data[i+1][[3, 4]]  # multiple indexing
+
+            total_history_data.append(split_history_data)
+            total_answer.append(list(answer))
 
     return total_history_data, total_answer
 
-    # print(history_data)
 
 
 train_dataX = []
 train_dataY = []
-filename = 'data/dynamic5_static4_center.csv'
-split_data = csv2list(filename)
+data_folder = 'experts_data/'
+files = [f for f in listdir(data_folder) if isfile(join(data_folder, f))]
+print("dataset files list (total ", len(files), " files ): ", files)
+
+split_data = []
+for filename in files:
+    split_data.append(csv2list(data_folder+filename))
+#print(split_data[0])
 x, y = make_history_data(split_data)
 train_dataX.extend(x)
 train_dataY.extend(y)
@@ -128,9 +128,9 @@ train_dataY = train_dataY[0:int(len_data*0.7)]
 
 val_dataX = []
 val_dataY = []
-filename = 'data/dynamic5_static4_center.csv'
+filename = 'experts_data/d3_s3.csv'
 split_data = csv2list(filename)
-x, y = make_history_data(split_data)
+x, y = make_history_data([split_data])
 val_dataX.extend(x)
 val_dataY.extend(y)
 
@@ -210,10 +210,10 @@ n_deadends = 7
 n_goal = 2
 n_command = 2
 
-input_size = HISTORY*(n_deadends+n_command)+n_goal
+input_size = HISTORY*(n_deadends+n_command+n_goal)
 model = SimpleNet(input_size, n_command, input_size)
 model = model.to(device)  # kaiming init
-#wandb.watch(model)
+wandb.watch(model)
 
 if device == 'cuda':
     model = nn.DataParallel(model)
@@ -227,7 +227,7 @@ if resume:
     best_error = checkpoint['error']
     start_epoch = checkpoint['epoch']
 
-optimizer = torch.optim.Adam(model.parameters(), lr=args.min_lr)
+optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 # optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
 # optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
 # optimizer = AdamP(model.parameters(), lr=args.lr)t
@@ -259,25 +259,21 @@ def train(epoch, train_loader):
 
 
 best_test_rmse_vx = 0
-best_test_rmse_vy = 0
-best_test_rmse_yawrate = 0
+best_test_rmse_vz = 0
 best_test_max_vx = 0
-best_test_max_vy = 0
-best_test_max_yawrate = 0
+best_test_max_vz = 0
 
 
 def test(epoch, val=True):
-    global best_error, best_test_rmse_vx, best_test_rmse_vy, best_test_rmse_yawrate, best_test_max_vx, best_test_max_vy, best_test_max_yawrate
+    global best_error, best_test_rmse_vx, best_test_rmse_vz, best_test_max_vx, best_test_max_vz
     model.eval()
     test_loss = torch.FloatTensor([0])
     val_loss = torch.FloatTensor([0])
 
     rmse_vx = torch.FloatTensor([0])  # tensor  with 1 dim, 0.0 element
-    rmse_vy = torch.FloatTensor([0])  # tensor  with 1 dim, 0.0 element
-    rmse_yawrate = torch.FloatTensor([0])  # tensor  with 1 dim, 0.0 element
+    rmse_vz = torch.FloatTensor([0])  # tensor  with 1 dim, 0.0 element
     max_vx_err = torch.FloatTensor(0)  # empty tensor 0 dim
-    max_vy_err = torch.FloatTensor(0)  # empty tensor 0 dim
-    max_yawrate_err = torch.FloatTensor(0)  # empty tensor 0 dim
+    max_vz_err = torch.FloatTensor(0)  # empty tensor 0 dim
     bool_best = False
 
     if not val:
@@ -288,11 +284,11 @@ def test(epoch, val=True):
                 prediction = model(x_test)
                 test_loss += criterion(prediction, y_test)
                 rmse_vx += criterion(prediction[:, 0], y_test[:, 0])
-                rmse_vy += criterion(prediction[:, 1], y_test[:, 1])
+                rmse_vz += criterion(prediction[:, 1], y_test[:, 1])
                 # view(1): tensor(0) -> tensor([0])
                 max_vx_err = torch.cat([max_vx_err, torch.max(
                     torch.abs(prediction[:, 0] - y_test[:, 0])).view(1)])
-                max_vy_err = torch.cat([max_vy_err, torch.max(
+                max_vz_err = torch.cat([max_vz_err, torch.max(
                     torch.abs(prediction[:, 1] - y_test[:, 1])).view(1)])
 
         err = math.sqrt(float(test_loss.item() / float(len(test_loader))))
@@ -300,24 +296,21 @@ def test(epoch, val=True):
             'Testing ==> Epoch {:2d} / {} Cost: {:.6f}'.format(epoch, args.epoch, err))
 
         rmse_vx = math.sqrt(float(rmse_vx.item() / float(len(test_loader))))
-        rmse_vy = math.sqrt(float(rmse_vy.item() / float(len(test_loader))))
+        rmse_vz = math.sqrt(float(rmse_vz.item() / float(len(test_loader))))
         max_vx_err = torch.max(max_vx_err).item()
-        max_vy_err = torch.max(max_vy_err).item()
-        #max_yawrate_err = torch.max(max_yawrate_err).item()
+        max_vz_err = torch.max(max_vz_err).item()
         print('vx RMSE : {}'.format(rmse_vx))
-        print('vy RMSE : {}'.format(rmse_vy))
+        print('vz RMSE : {}'.format(rmse_vz))
         print('vx Max Err : {}'.format(max_vx_err))
-        print('vy Max Err : {}'.format(max_vy_err))
+        print('vz Max Err : {}'.format(max_vz_err))
 
-        '''
+        
         wandb.log({"Test Loss": err,
                    "vx RMSE": rmse_vx,
-                   "vy RMSE": rmse_vy,
-                   "yawrate RMSE": rmse_yawrate,
+                   "vz RMSE": rmse_vz,
                    "vx Max Err": max_vx_err,
-                   "vy Max Err": max_vy_err,
-                   "yawrate Max Err":  max_yawrate_err})
-        '''
+                   "vz Max Err": max_vz_err})
+        
 
         if err < best_error:
             print('Saving...')
@@ -334,12 +327,10 @@ def test(epoch, val=True):
 
             # save best test err to send notify to my lord
             best_test_rmse_vx = rmse_vx
-            best_test_rmse_vy = rmse_vy
-            #best_test_rmse_yawrate = rmse_yawrate
+            best_test_rmse_vz = rmse_vz
             best_test_max_vx = max_vx_err
-            best_test_max_vy = max_vy_err
-            #best_test_max_yawrate = max_yawrate_err
-        return err, bool_best, rmse_vx, rmse_vy, max_vx_err, max_vy_err
+            best_test_max_vz = max_vz_err
+        return err, bool_best, rmse_vx, rmse_vz, max_vx_err, max_vz_err
     else:
         with torch.no_grad():
             for batch_idx, samples in enumerate(val_loader):
@@ -347,27 +338,23 @@ def test(epoch, val=True):
                 x_test, y_test = x_test.to(device), y_test.to(device)
                 prediction = model(x_test)
                 rmse_vx += criterion(prediction[:, 0], y_test[:, 0])
-                rmse_vy += criterion(prediction[:, 1], y_test[:, 1])
-                #rmse_yawrate += criterion(prediction[:, 2], y_test[:, 2])
+                rmse_vz += criterion(prediction[:, 1], y_test[:, 1])
                 # view(1): tensor(0) -> tensor([0])
                 max_vx_err = torch.cat([max_vx_err, torch.max(
                     torch.abs(prediction[:, 0] - y_test[:, 0])).view(1)])
-                max_vy_err = torch.cat([max_vy_err, torch.max(
+                max_vz_err = torch.cat([max_vz_err, torch.max(
                     torch.abs(prediction[:, 1] - y_test[:, 1])).view(1)])
 
         print('Validation')
         rmse_vx = math.sqrt(float(rmse_vx.item() / float(len(val_loader))))
-        rmse_vy = math.sqrt(float(rmse_vy.item() / float(len(val_loader))))
+        rmse_vz = math.sqrt(float(rmse_vz.item() / float(len(val_loader))))
         max_vx_err = torch.max(max_vx_err).item()
-        max_vy_err = torch.max(max_vy_err).item()
-        #max_yawrate_err = torch.max(max_yawrate_err).item()
+        max_vz_err = torch.max(max_vz_err).item()
         print('vx RMSE : {}'.format(rmse_vx))
-        print('vy RMSE : {}'.format(rmse_vy))
-        #print('yaw rate RMSE : {}'.format(rmse_yawrate))
+        print('vz RMSE : {}'.format(rmse_vz))
         print('vx Max Err : {}'.format(max_vx_err))
-        print('vy Max Err : {}'.format(max_vy_err))
-        #print('yaw rate Max Err : {}'.format(max_yawrate_err))
-        return rmse_vx, rmse_vy, max_vx_err, max_vy_err
+        print('vz Max Err : {}'.format(max_vz_err))
+        return rmse_vx, rmse_vz, max_vx_err, max_vz_err
 
 
 if not validation:
@@ -377,10 +364,10 @@ if not validation:
     early_stopping = 0
     for epoch in range(start_epoch, start_epoch + args.epoch):
         train_loss = train(epoch, train_loader)
-        test_loss, bool_best, rmse_vx, rmse_vy, max_vx_err, max_vy_err = test(
+        test_loss, bool_best, rmse_vx, rmse_vz, max_vx_err, max_vz_err = test(
             epoch, val=False)
         wr.writerow([epoch, train_loss, test_loss, bool_best,
-                     rmse_vx, rmse_vy, max_vx_err, max_vy_err])
+                     rmse_vx, rmse_vz, max_vx_err, max_vz_err])
 
         early_stopping += 1
         if bool_best:
@@ -394,30 +381,30 @@ assert os.path.isdir('checkpoint'), 'Error: no checkpoint dir found'
 checkpoint = torch.load('./checkpoint/' + args.name + '.pth')
 model.load_state_dict(checkpoint['model'])
 
-rmse_vx, rmse_vy, max_vx_err, max_vy_err = test(
+rmse_vx, rmse_vz, max_vx_err, max_vz_err = test(
     0, val=True)
 if not validation:
     wr.writerow(["epoch", "train_loss", "test_loss", "bool_best",
-                 "rmse_vx", "rmse_vy", "max_vx_err", "max_vy_err"])
-    wr.writerow(["best: test_rmse_vx", "rmse_vy",
-                 "max_vx_err", "max_vy_err"])
-    wr.writerow([best_test_rmse_vx, best_test_rmse_vy,
-                 best_test_max_vx, best_test_max_vy])
-    wr.writerow(["validation: rmse_vx", "rmse_vy",
-                 "max_vx_err", "max_vy_err"])
-    wr.writerow([rmse_vx, rmse_vy,
-                 max_vx_err, max_vy_err])
+                 "rmse_vx", "rmse_vz", "max_vx_err", "max_vz_err"])
+    wr.writerow(["best: test_rmse_vx", "rmse_vz",
+                 "max_vx_err", "max_vz_err"])
+    wr.writerow([best_test_rmse_vx, best_test_rmse_vz,
+                 best_test_max_vx, best_test_max_vz])
+    wr.writerow(["validation: rmse_vx", "rmse_vz",
+                 "max_vx_err", "max_vz_err"])
+    wr.writerow([rmse_vx, rmse_vz,
+                 max_vx_err, max_vz_err])
     f.close()
 
 
 broadcast_msg = 'Finish training at {} epoch. \nName: {}. \nFor Best Test: \
-                \nRMSE vx: {:.6f} \nRMSE vy: {:.6f} \
-                \nMax vx error: {:.6f} \nMax vy error:  {:.6f}   \
-                \n\nFor Validation: \nRMSE vx: {:.6f} \nRMSE vy: {:.6f}\
-                 \nMax vx error: {:.6f} \nMax vy error: {:.6f} '.format(
-                epoch, args.name, best_test_rmse_vx, best_test_rmse_vy, 
-                best_test_max_vx, best_test_max_vy, rmse_vx, rmse_vy,  max_vx_err,
-    max_vy_err)
+                \nRMSE vx: {:.6f} \nRMSE vz: {:.6f} \
+                \nMax vx error: {:.6f} \nMax vz error:  {:.6f}   \
+                \n\nFor Validation: \nRMSE vx: {:.6f} \nRMSE vz: {:.6f}\
+                 \nMax vx error: {:.6f} \nMax vz error: {:.6f} '.format(
+                epoch, args.name, best_test_rmse_vx, best_test_rmse_vz, 
+                best_test_max_vx, best_test_max_vz, rmse_vx, rmse_vz,  max_vx_err,
+    max_vz_err)
 '''
 response = requests.post(TARGET_URL, headers={'Authorization': 'Bearer ' + TOKEN},
                             data={'message': broadcast_msg})
