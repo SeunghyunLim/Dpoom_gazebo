@@ -39,7 +39,7 @@
   <arg name="fifth_tb3_yaw"   default=" 2.0"/>
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <arg name="world_name" value="$(find dpoom_gazebo)/worlds/obstacles.world"/>
+    <arg name="world_name" value="$(find dpoom_gazebo)/worlds/no_obs.world"/>
     <arg name="paused" value="false"/>
     <arg name="use_sim_time" value="true"/>
     <arg name="gui" value="true"/>
