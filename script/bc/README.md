@@ -1,7 +1,9 @@
 ## How to make dataset
+
 ### Start
-``` bash
-roslaunch dpoom_gazebo dppom_obs.launch
+
+```bash
+roslaunch dpoom_gazebo dpoom_obs.launch
 
 python3 myjoystick.py
 
@@ -11,7 +13,8 @@ python2 joy2cmd.py
 ```
 
 ### rosbag record
-``` bash
+
+```bash
 cd <bag_record_directory>
 #rosbag record -O subset <topic1> <topic2>
 rosbag record -O subset /camera/depth/image_raw /camera/color/image_raw/compressed /cmd_vel /odom
@@ -19,25 +22,32 @@ rosbag record -O subset /camera/depth/image_raw /camera/color/image_raw/compress
 ```
 
 ### start dynamic obstacle
+
 in 'script/agent' folder:
+
 ```bash
 bash init.sh
 ```
 
 ### initialie pose after experiments
+
 To initialize agent's positions
-``` bash
+
+```bash
 python init_agent.py
 ```
 
 ## How to train model
-``` bash
+
+```bash
 python train_morp_bc.py
 
 ```
+
 ## How to test trained model
-``` bash
-roslaunch dpoom_gazebo dppom_obs.launch
+
+```bash
+roslaunch dpoom_gazebo dpoom_obs.launch
 
 python2 bc2cmd.py
 
