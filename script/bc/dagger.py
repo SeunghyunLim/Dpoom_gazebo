@@ -26,6 +26,7 @@ import csv
 from cv_bridge import CvBridge, CvBridgeError
 from time import sleep
 import numpy as np
+from random import *
 
 MODEL_NAME = 'h_10'
 HISTORY = 10
@@ -489,8 +490,13 @@ def sample_trajectory(model, beta=0.75):
 
         model_command = np.array(model_command)
 
-        control_speed = (1-beta)*model_command[0] + beta*joystick[0]*(2*PI/360)
-        control_steer = (1-beta)*model_command[1] + beta*joystick[1]*(2*PI/360)
+        p = random()
+        if p > beta:
+            control_speed = model_command[0]
+            control_steer = model_command[1]
+        else:
+            control_speed = joystick[0]*(2*PI/360)
+            control_steer = joystick[1]*(2*PI/360)
         print(control_speed, control_steer)
         #print("="*20)
 
@@ -511,6 +517,7 @@ def sample_trajectory(model, beta=0.75):
             break
         # FPS
         numFrame += 1
+        #beta /= numFrame
     print("TOTAL TIME {}".format(float(sim_time) - t0))
     easyGo.stop()
     #rospy.signal_shutdown("esc")
