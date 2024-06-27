@@ -110,7 +110,7 @@ while(dist > 0.8):
         os.system("sh ./init.sh")
         obs_flg = 1
 
-    sim.clearObstacle()
+    # sim.clearObstacle()
     obs_position_list = [[(x-size, y-size),(x+size, y-size), (x+size, y+size), (x-size, y+size)] for x,y,z in samples]
     obs = [sim.addObstacle(obs_position) for obs_position in obs_position_list]
     sim.processObstacles()

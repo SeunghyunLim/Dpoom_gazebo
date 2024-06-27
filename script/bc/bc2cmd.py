@@ -24,8 +24,9 @@ from cv_bridge import CvBridge, CvBridgeError
 from time import sleep
 import numpy as np
 
-MODEL_NAME = 'dagger__2'
-HISTORY = 10
+# MODEL_NAME = 'dagger__2'
+MODEL_NAME = 'temp'
+HISTORY = 4
 parser = argparse.ArgumentParser()
 parser.add_argument('--keyboard', action='store_true')
 parser.add_argument('--control', action='store_true')

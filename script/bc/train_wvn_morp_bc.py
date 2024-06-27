@@ -102,7 +102,7 @@ def make_history_data(split_data):
 
 train_dataX = []
 train_dataY = []
-data_folder = 'experts_data/'
+data_folder = 'experts_data_wvn/'
 files = [f for f in listdir(data_folder) if isfile(join(data_folder, f))]
 print("dataset files list (total ", len(files), " files ): ", files)
 
@@ -131,7 +131,7 @@ train_dataY = train_dataY[0:int(len_data*0.7)]
 
 val_dataX = []
 val_dataY = []
-filename = 'experts_data/d3_s3.csv'
+filename = 'experts_data_wvn/d5_s9.csv'
 split_data = csv2list(filename)
 x, y = make_history_data([split_data])
 val_dataX.extend(x)
@@ -170,7 +170,8 @@ val_dataset = CustomDataset(val_dataX, val_dataY)
 val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False)
 
 # device = 'cuda' if torch.cuda.is_available() else 'cpu'
-device = 'cpu'
+# device = 'cpu'
+device = 'cuda'
 best_error = 100
 start_epoch = 0
 
@@ -242,6 +243,7 @@ def train(epoch, train_loader):
     model.train()
 
     train_loss = torch.FloatTensor([0])
+    train_loss = train_loss.to(device)
     for batch_idx, samples in enumerate(train_loader):
         x_train, y_train = samples
         x_train, y_train = x_train.to(device), y_train.to(device)
@@ -271,12 +273,18 @@ def test(epoch, val=True):
     model.eval()
     test_loss = torch.FloatTensor([0])
     val_loss = torch.FloatTensor([0])
+    test_loss = test_loss.to(device)
 
     rmse_vx = torch.FloatTensor([0])  # tensor  with 1 dim, 0.0 element
     rmse_vz = torch.FloatTensor([0])  # tensor  with 1 dim, 0.0 element
     max_vx_err = torch.FloatTensor(0)  # empty tensor 0 dim
     max_vz_err = torch.FloatTensor(0)  # empty tensor 0 dim
     bool_best = False
+
+    rmse_vx = rmse_vx.to(device)
+    rmse_vz = rmse_vz.to(device)
+    max_vx_err = max_vx_err.to(device)
+    max_vz_err = max_vz_err.to(device)
 
     if not val:
         with torch.no_grad():
@@ -361,6 +369,7 @@ def test(epoch, val=True):
 
 
 if not validation:
+    # print(train_loader)
     f = open('graph/'+args.name+'.csv', 'w', encoding='utf-8', newline='')
     wr = csv.writer(f)
 

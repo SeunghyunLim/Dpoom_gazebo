@@ -714,7 +714,7 @@
           <pose frame=''>0 0 0 0 -0 0</pose>
           <geometry>
             <box>
-              <size>0.1016 0.3302 0.01046</size>
+              <size>0.001 0.001 0.001</size>
             </box>
           </geometry>
           <surface>
@@ -764,7 +764,7 @@
           </surface>
         </collision>
       </link>
-      <static>0</static>
+      <static>1</static>
       <allow_auto_disable>1</allow_auto_disable>
       <pose frame=''>0 -2 -0.001007 0 -0 0</pose>
     </model>

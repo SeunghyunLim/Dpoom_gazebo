@@ -80,6 +80,6 @@ if __name__ == "__main__":
         while True:
             c = keyPoller.poll()
             if not c is None:
-                print c*2
+                print(c*2)
                 time.sleep(0.003)
                 _cls()

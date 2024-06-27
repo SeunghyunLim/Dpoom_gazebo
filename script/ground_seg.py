@@ -245,7 +245,7 @@ def GroundSeg(depth_image, color_image, stride=80):
     virtual_lane_available = []
     for i in range(stride, ROW, stride):
         if args.plot and i == ROW/2:
-            temp_image, dead_end = verticalGround(depth_image, color_image, i, plot=True)
+            temp_image, dead_end = verticalGround(depth_image, color_image, i, plot=False)
         else:
             temp_image, dead_end = verticalGround(depth_image, color_image, i, plot=False)
         virtual_lane_available.append(dead_end)

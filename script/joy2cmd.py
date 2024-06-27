@@ -94,6 +94,9 @@ def callback(data):
     start = data.buttons[4]
 
     control_steer = (int)(round(control_steer))
+    # dead zone
+    if abs(control_steer) <= 2:
+        control_steer = 0
     control_speed = (int)(round(control_speed))
     
     if control_brake:

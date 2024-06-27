@@ -229,7 +229,7 @@ def orca(verbose=False):
         # plt.ylim(-2,8)
         # plt.pause(0.001)
         # plt.cla()
-        print("{:.6f} sec simulated".format(step/SIMUL_HZ))
+        # print("{:.6f} sec simulated".format(step/SIMUL_HZ))
 
 
         time.sleep(0.1)
