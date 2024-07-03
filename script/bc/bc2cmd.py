@@ -25,7 +25,7 @@ from time import sleep
 import numpy as np
 
 # MODEL_NAME = 'dagger__2'
-MODEL_NAME = 'temp'
+MODEL_NAME = 'history4'
 HISTORY = 4
 parser = argparse.ArgumentParser()
 parser.add_argument('--keyboard', action='store_true')
@@ -92,7 +92,8 @@ def time_callback(data):
 def image_callback(data):
     global color_image_raw
     # color_image_raw = bridge.compressed_imgmsg_to_cv2(data, "bgr8")
-    color_image_raw = imgmsg_to_cv2(data)
+    # color_image_raw = imgmsg_to_cv2(data)
+    color_image_raw = bridge.imgmsg_to_cv2(data, "bgr8")
 
 sim_time = 0.0
 flg = 0
@@ -112,7 +113,7 @@ def listener():
     #rospy.init_node('node_name')
     bridge = CvBridge()
     rospy.Subscriber("/camera/depth/image_raw", Image, depth_callback)
-    rospy.Subscriber("/camera/color/image_raw/compressed", CompressedImage, image_callback)
+    rospy.Subscriber("/camera/color/image_raw", Image, image_callback)
     rospy.Subscriber("/odom", Odometry, state_callback)
     rospy.Subscriber("/clock", Clock, time_callback)
     rospy.Subscriber("/cmd_vel", Twist, cmd_callback)
@@ -448,19 +449,21 @@ def main():
         goal_x = history_data[:, 1]
         goal_y = history_data[:, 2]
 
-        deadends = history_data[:, 5:] / 360.0
-
+        deadends = history_data[:, 6:] / 360.0
         commands = history_data[:, 3:5]
+        yaw = history_data[:, 5]
 
         dead_ends = np.hstack(deadends)
         commands = np.hstack(commands)
         goal_x = np.hstack(goal_x)
         goal_y = np.hstack(goal_y)
+        yaw = np.hstack(yaw)
 
         model_input = list(dead_ends)
         model_input.extend(list(commands))
         model_input.extend(list(goal_x))
         model_input.extend(list(goal_y))
+        model_input.extend(list(yaw))
 
         with torch.no_grad():
             model_command = model(torch.FloatTensor(model_input))

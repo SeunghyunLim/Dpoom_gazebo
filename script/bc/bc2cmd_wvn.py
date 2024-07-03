@@ -27,8 +27,8 @@ from collections import OrderedDict
 
 from morp import *
 
-MODEL_NAME = 'dagger__2'
-# MODEL_NAME = 'history4'
+# MODEL_NAME = 'wvn_morp_h4'
+MODEL_NAME = 'history4'
 # MODEL_NAME = 'history_10'
 # MODEL_NAME = 'history4_new'
 HISTORY = 4
@@ -131,15 +131,17 @@ print('==> Resuming from checkpoint')
 assert os.path.isdir('checkpoint'), 'Error: no checkpoint dir found'
 checkpoint = torch.load('./checkpoint/' + MODEL_NAME + '.pth')
 
-if device == 'cpu' and MODEL_NAME!='dagger__2':
-    new_checkpoint = OrderedDict()
-    for k, v in checkpoint['model'].items():
-        name = k[7:]
-        new_checkpoint[name] = v
-    model.load_state_dict(new_checkpoint)
+# if device == 'cpu' and MODEL_NAME!='dagger__2':
+#     new_checkpoint = OrderedDict()
+#     for k, v in checkpoint['model'].items():
+#         name = k[7:]
+#         new_checkpoint[name] = v
+#     model.load_state_dict(new_checkpoint)
     
-else:
-    model.load_state_dict(checkpoint['model'])
+# else:
+#     model.load_state_dict(checkpoint['model'])
+
+model.load_state_dict(checkpoint['model'])
 
 best_error = checkpoint['error']
 start_epoch = checkpoint['epoch']
@@ -210,19 +212,23 @@ def main():
         goal_x = history_data[:, 1]
         goal_y = history_data[:, 2]
 
-        deadends = history_data[:, 5:] / 360.0
-
+        deadends = history_data[:, 6:] / 210
         commands = history_data[:, 3:5]
+        yaw = history_data[:, 5]
 
         dead_ends = np.hstack(deadends)
         commands = np.hstack(commands)
         goal_x = np.hstack(goal_x)
         goal_y = np.hstack(goal_y)
+        yaw = np.hstack(yaw)
+
 
         model_input = list(dead_ends)
         model_input.extend(list(commands))
         model_input.extend(list(goal_x))
         model_input.extend(list(goal_y))
+        model_input.extend(list(yaw))
+
 
         with torch.no_grad():
             model_command = model(torch.FloatTensor(model_input))
@@ -231,6 +237,7 @@ def main():
         control_speed = model_command[0]
         control_steer = model_command[1]
 
+        print(model_input)
         print(control_speed, control_steer)
 
         if numFrame < 15:
